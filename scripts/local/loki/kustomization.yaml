@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - s3-loki-grant.yaml
+  - s3-loki.yaml
+helmCharts:
+  - name: loki
+    releaseName: loki
+    repo: https://grafana-community.github.io/helm-charts
+    version: 18.5.4
+    namespace: loki
+    valuesFile: values.yaml
+
+patches:
+  - target:
+      kind: Service
+      name: loki
+      namespace: loki
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: NodePort
+      - op: add
+        path: /spec/ports/0/nodePort
+        value: 30322

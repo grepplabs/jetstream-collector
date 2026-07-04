@@ -1,0 +1,28 @@
+exporters:
+  nop:
+
+receivers:
+  nop:
+
+service:
+  pipelines:
+    logs/receiver-single:
+      receivers:
+        - nop
+      exporters:
+        - nop
+
+  telemetry:
+    resource:
+      service.name: ${openbao:secret/otel/service#name}
+      service.version: ${openbao:secret/otel/service#version}
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

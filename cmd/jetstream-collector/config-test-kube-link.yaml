@@ -1,0 +1,62 @@
+exporters:
+  jetstream/kube-link-logs:
+    url: nats://127.0.0.1:30422
+    # url: nats://nats.nats.svc.cluster.local:4222
+    subject_pattern: logs.tenant.$${header:X-Tenant-ID}
+    # WARNING: high cardinality - include tenant id in metric
+    include_subject: true
+    compression: gzip
+    content_type: proto
+    msg_id: true
+
+receivers:
+  jetstream/kube-link-resource-logs:
+    url: nats://127.0.0.1:30422
+    # url: nats://nats.nats.svc.cluster.local:4222
+    stream: LOGS_RESOURCE
+    subject: logs.resource.*
+    consumer_name: kube-link-resource-logs
+    workers: 10
+    bootstrap:
+      consumer:
+        deliver_policy: new
+
+processors:
+  kubemapping/resource-to-tenant:
+    context: kind-kind
+    mappings:
+      - resource:
+          group: api.hub.acme.cloud
+          version: v1alpha1
+          kind: Link
+          namespace: collectors
+        selector:
+          labels:
+            - 'acme.cloud/resource-id=$${header:JetStream-Subject-Last-Token}'
+        value:
+          field: spec.tenantId
+        target: X-Tenant-ID
+service:
+  pipelines:
+    logs/kube-link-logs:
+      receivers:
+        - jetstream/kube-link-resource-logs
+      processors:
+        - kubemapping/resource-to-tenant
+      exporters:
+        - jetstream/kube-link-logs
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

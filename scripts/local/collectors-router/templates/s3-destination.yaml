@@ -1,0 +1,99 @@
+{{- range $router := .Values.routers }}
+{{- range $destination := index $router "s3-destinations" }}
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Bucket
+metadata:
+  name: {{ $destination.bucket }}
+  namespace: collectors
+spec:
+  clusterRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Identity
+metadata:
+  name: {{ $destination.bucket }}
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  name: {{ $destination.bucket }}
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Credentials
+metadata:
+  name: {{ $destination.bucket }}
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  identityRef:
+    name: {{ $destination.bucket }}
+  secretRef:
+    name: {{ $destination.bucket }}-s3-credentials
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Policy
+metadata:
+  name: {{ $destination.bucket }}-read-write
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  reclaimPolicy: Delete
+  statements:
+    - effect: Allow
+      actions:
+        - s3:ListBucket
+        - s3:GetBucketLocation
+        - s3:ListBucketMultipartUploads
+      resources:
+        - {{ $destination.bucket }}
+
+    - effect: Allow
+      actions:
+        - s3:GetObject
+        - s3:GetObjectVersion
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:DeleteObjectVersion
+        - s3:GetObjectTagging
+        - s3:PutObjectTagging
+        - s3:DeleteObjectTagging
+        - s3:AbortMultipartUpload
+        - s3:ListMultipartUploadParts
+      resources:
+        - {{ $destination.bucket }}/*
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3PolicyBinding
+metadata:
+  name: {{ $destination.bucket }}
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  policyRef:
+    name: {{ $destination.bucket }}-read-write
+  subjects:
+    - kind: S3Identity
+      name: {{ $destination.bucket }}
+  reclaimPolicy: Delete
+
+
+{{- end }}
+{{- end }}

@@ -1,0 +1,8 @@
+type: clientmetadata
+scope_name: github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]

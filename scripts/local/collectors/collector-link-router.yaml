@@ -1,0 +1,70 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: link-router
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 1
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  config:
+    receivers:
+      jetstream/link-router-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        stream: LOGS_RESOURCE
+        subject: logs.resource.*
+        consumer_name: link-router-logs
+        workers: 10
+
+    exporters:
+      jetstream/tenant-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject_pattern: logs.tenant.$${header:X-Tenant-ID}
+        # include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+    processors:
+      kubemapping/resource-to-tenant:
+        logger:
+          development: true
+          level: debug
+        mappings:
+          - resource:
+              group: api.hub.acme.cloud
+              version: v1alpha1
+              kind: Link
+              namespace: collectors
+            selector:
+              labels:
+                - 'acme.cloud/resource-id=$${header:JetStream-Subject-Last-Token}'
+            value:
+              field: spec.tenantId
+            target: X-Tenant-ID
+
+    service:
+      pipelines:
+        logs/link-router:
+          receivers:
+            - jetstream/link-router-logs
+          processors:
+            - kubemapping/resource-to-tenant
+          exporters:
+            - jetstream/tenant-logs
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

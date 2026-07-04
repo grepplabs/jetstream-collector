@@ -1,0 +1,14 @@
+apiVersion: jetstream.nats.io/v1beta2
+kind: Stream
+metadata:
+  name: logs-resource
+  namespace: collectors
+spec:
+  name: LOGS_RESOURCE
+  subjects:
+    # logs.resource.<acme.resource.uuid>
+    - logs.resource.*
+  storage: file
+  retention: limits
+  maxAge: 4h
+  replicas: 3

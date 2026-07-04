@@ -1,0 +1,43 @@
+exporters:
+  jetstream/link-00001-logs:
+    url: nats://127.0.0.1:30422
+    # url: nats://nats.nats.svc.cluster.local:4222
+    subject: logs.tenant.00000000-0000-0000-9999-000000000001
+    compression: gzip
+    content_type: proto
+    msg_id: true
+
+receivers:
+  jetstream/link-00001-resource-logs:
+    url: nats://127.0.0.1:30422
+    # url: nats://nats.nats.svc.cluster.local:4222
+    stream: LOGS_RESOURCE
+    subject: logs.resource.00000000-0000-0000-0000-000000000001
+    consumer_name: link-00001-resource-logs
+    workers: 10
+    bootstrap:
+      consumer:
+        deliver_policy: new
+
+service:
+  pipelines:
+    logs/link-00001-logs:
+      receivers:
+        - jetstream/link-00001-resource-logs
+      exporters:
+        - jetstream/link-00001-logs
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

@@ -1,0 +1,30 @@
+# Individual OpenBao fields can be used inside an otherwise local Collector
+# configuration with openbao:<mount>/<path>#<field> references.
+#
+# Populate the example KV v2 secret:
+#   bao kv put -mount=secret otel/backend \
+#     endpoint=https://backend.example.com:4318 \
+#     authorization='Bearer example-token' \
+#     tenant=example-tenant
+#
+# Run this distribution from cmd/jetstream-collector:
+#   BAO_CONFIG=./openbao-provider.yaml \
+#   BAO_ADDR=http://127.0.0.1:8200 \
+#   BAO_TOKEN=root \
+#   go run . --config=./config-openbao-fragments.yaml
+
+receivers:
+  nop:
+
+exporters:
+  otlphttp/openbao:
+    endpoint: ${openbao:secret/otel/backend#endpoint}
+    headers:
+      Authorization: ${openbao:secret/otel/backend#authorization}
+      X-Tenant: ${openbao:secret/otel/backend#tenant}
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      exporters: [otlphttp/openbao]

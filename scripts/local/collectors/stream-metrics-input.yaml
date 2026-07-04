@@ -1,0 +1,13 @@
+apiVersion: jetstream.nats.io/v1beta2
+kind: Stream
+metadata:
+  name: metrics-input
+  namespace: collectors
+spec:
+  name: METRICS_INPUT
+  subjects:
+    - metrics.input
+  storage: file
+  retention: limits
+  maxAge: 4h
+  replicas: 3

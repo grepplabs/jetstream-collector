@@ -1,0 +1,30 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: link-router
+  namespace: collectors
+rules:
+  - apiGroups:
+      - api.hub.acme.cloud
+    resources:
+      - links
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: link-router
+  namespace: collectors
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: link-router
+subjects:
+  - kind: ServiceAccount
+    name: link-router-collector
+    namespace: collectors

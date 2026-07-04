@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  verify-code:
+    uses: ./.github/workflows/_verify-code.yaml
+  build-image:
+    uses: ./.github/workflows/_publish.yaml
+    needs:
+      - verify-code
+    with:
+      push_image: true
+  release:
+    needs: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

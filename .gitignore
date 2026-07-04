@@ -21,12 +21,35 @@ profile.cov
 # vendor/
 
 # Go workspace file
-go.work
-go.work.sum
 
 # env file
 .env
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# editor and IDE paraphernalia
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+bin/
+.tools/
+.release/
+_build/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### Misc ###
+.vscode/
+.claude/
+.DS_Store
+
+
+/kind-config-jetstream-collector.yaml
+/kubeconfig-jetstream-collector
+.debug
+__snapshot__

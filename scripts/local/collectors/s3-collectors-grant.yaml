@@ -1,0 +1,26 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: ResourceReferenceGrant
+metadata:
+  name: allow-collectors-to-seaweed
+  namespace: seaweedfs-cluster
+spec:
+  from:
+    - group: seaweed.seaweedfs.com
+      kind: Bucket
+      namespace: collectors
+    - group: seaweed.seaweedfs.com
+      kind: S3Identity
+      namespace: collectors
+    - group: seaweed.seaweedfs.com
+      kind: S3Credentials
+      namespace: collectors
+    - group: seaweed.seaweedfs.com
+      kind: S3Policy
+      namespace: collectors
+    - group: seaweed.seaweedfs.com
+      kind: S3PolicyBinding
+      namespace: collectors
+  to:
+    - group: seaweed.seaweedfs.com
+      kind: Seaweed
+      name: seaweed

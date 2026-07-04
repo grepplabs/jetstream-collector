@@ -1,0 +1,39 @@
+
+image:
+  tag: v0.9.0
+
+environment:
+    # PostgreSQL-backed metastore
+  - name: QW_METASTORE_URI
+    value: postgresql://quickwit:quickwit@postgresql.quickwit.svc.cluster.local:5432/quickwit
+
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: quickwit-s3-credentials
+        key: accessKey
+
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: quickwit-s3-credentials
+        key: secretKey
+
+  - name: AWS_EC2_METADATA_DISABLED
+    value: "true"
+
+searcher:
+  serviceType: NodePort
+  restNodePort: 30280
+  grpcNodePort: 30281
+
+config:
+  # version: 0.8
+  # Index data stored in S3
+  default_index_root_uri: s3://quickwit/quickwit-indexes
+
+  storage:
+    s3:
+      region: eu-central-1
+      endpoint: http://seaweed-s3.seaweedfs-cluster.svc.cluster.local:8333
+      force_path_style_access: true

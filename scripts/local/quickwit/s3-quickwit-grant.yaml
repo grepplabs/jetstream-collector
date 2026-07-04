@@ -1,0 +1,27 @@
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: ResourceReferenceGrant
+metadata:
+  name: allow-quickwit-to-seaweed
+  namespace: seaweedfs-cluster
+spec:
+  from:
+    - group: seaweed.seaweedfs.com
+      kind: Bucket
+      namespace: quickwit
+    - group: seaweed.seaweedfs.com
+      kind: S3Identity
+      namespace: quickwit
+    - group: seaweed.seaweedfs.com
+      kind: S3Credentials
+      namespace: quickwit
+    - group: seaweed.seaweedfs.com
+      kind: S3Policy
+      namespace: quickwit
+    - group: seaweed.seaweedfs.com
+      kind: S3PolicyBinding
+      namespace: quickwit
+  to:
+    - group: seaweed.seaweedfs.com
+      kind: Seaweed
+      name: seaweed

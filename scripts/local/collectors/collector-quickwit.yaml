@@ -1,0 +1,66 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: quickwit
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 2
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  config:
+    receivers:
+      jetstream/quickwit-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        stream: LOGS_INPUT
+        subject: logs.input
+        include_subject: true
+        consumer_name: quickwit-logs
+        workers: 10
+
+    exporters:
+      otlp/quickwit-logs:
+        endpoint: quickwit-indexer.quickwit.svc.cluster.local:7281
+        tls:
+          insecure: true
+        #headers:
+        #  qw-otel-logs-index: otel-logs-v0_9
+        timeout: 60s
+        sending_queue:
+          enabled: true
+          wait_for_result: true
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 60s
+
+    processors:
+      filter/log-type/audit/keep:
+        error_mode: ignore
+        logs:
+          log_record:
+            - attributes["acme.log.type"] != "AUDIT" or attributes["acme.resource.id"] == nil
+
+    service:
+      pipelines:
+        logs/quickwit-audit:
+          receivers:
+            - jetstream/quickwit-logs
+          processors:
+            - filter/log-type/audit/keep
+          exporters:
+            - otlp/quickwit-logs
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

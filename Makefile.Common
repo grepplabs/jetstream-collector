@@ -1,0 +1,119 @@
+SHELL = /usr/bin/env bash
+
+GOTEST_TIMEOUT?=240s
+GOTEST_OPT?= -race -cover -timeout $(GOTEST_TIMEOUT)
+GOTEST_INTEGRATION_OPT?= $(GOTEST_OPT) -parallel 4 -tags=integration
+GOCMD?= go
+GOTEST=$(GOCMD) test
+GOOS := $(shell $(GOCMD) env GOOS)
+GOARCH := $(shell $(GOCMD) env GOARCH)
+
+
+# SRC_ROOT is the top of the source tree.
+SRC_ROOT := $(shell git rev-parse --show-toplevel)
+
+TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
+TOOLS_BIN_DIR   := $(SRC_ROOT)/.tools
+TOOLS_MOD_REGEX := "\s+_\s+\".*\""
+TOOLS_PKG_NAMES := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"" | grep -vE '/v[0-9]+$$')
+TOOLS_BIN_NAMES := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(shell echo $(TOOLS_PKG_NAMES))))
+export PATH := $(TOOLS_BIN_DIR):$(PATH)
+
+LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+MISSPELL     := $(TOOLS_BIN_DIR)/misspell
+MDATAGEN     := $(TOOLS_BIN_DIR)/mdatagen
+GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
+GOJQ         := $(TOOLS_BIN_DIR)/gojq
+PORTO        := $(TOOLS_BIN_DIR)/porto
+BUILDER      := $(TOOLS_BIN_DIR)/builder
+LICENSER     := $(TOOLS_BIN_DIR)/go-licenser
+CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
+MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
+
+# Ignored vulnerabilities with justification:
+# - GO-2026-5662: False positive, we use `github.com/prometheus/prometheus`
+#   >= 0.312.0, which has the fix for this vulnerability. Besides, this doesn't
+#   affect the Collector in any way, only the Prometheus UI.
+IGNORED_VULNS = GO-2026-5662
+
+# Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
+IGNORE_GOLANG_VULNS ?=
+
+.PHONY: install-tools
+install-tools: $(TOOLS_BIN_NAMES)
+
+$(TOOLS_BIN_DIR):
+	mkdir -p $@
+
+$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+.PHONY: test
+test:
+	$(GOTEST) $(GOTEST_OPT) ./...
+
+.PHONY: integration-test
+integration-test:
+	$(GOTEST) $(GOTEST_INTEGRATION_OPT) ./...
+
+.PHONY: fmt
+fmt:
+	gofmt -w -s ./
+
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.26.0
+
+.PHONY: misspell
+misspell: $(MISSPELL)
+	@echo "running $(MISSPELL)"
+	@$(MISSPELL_CMD)
+
+.PHONY: lint
+lint: $(LINT) misspell
+	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
+
+.PHONY: generate
+generate: $(MDATAGEN)
+	$(GOCMD) generate ./...
+	goimports -w ./
+
+.PHONY: moddownload
+moddownload:
+	$(GOCMD) mod download
+
+.PHONY: porto
+porto: $(PORTO)
+	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
+
+# jq filter: Build OSV lookup map {id: {withdrawn, summary, pkg}}
+_GOVUL_MAP = reduce (.[] | select(.osv)) as $$osv ({}; . + {($$osv.osv.id): {summary: $$osv.osv.summary, withdrawn: $$osv.osv.withdrawn, pkg: ($$osv.osv.affected[0].package.name // "")}}) as $$osv_data
+# jq filter: Check if vulnerability should be skipped (withdrawn, golang+IGNORE_GOLANG_VULNS, or has no position/symbol in trace)
+_GOVUL_SKIP = ($$osv_data[.finding.osv].withdrawn | . != null and . != "") or ("$(IGNORE_GOLANG_VULNS)" == "1" and ($$osv_data[.finding.osv].pkg | test("^(stdlib|golang\\.org|google\\.golang\\.org)"))) or (.finding.trace | length == 0 or (all(.position == null and .symbol == null)))
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK) $(GOJQ)
+	@set -e; \
+	$(GOVULNCHECK) -format json ./... > govulncheck-output.json; \
+	FOUND="$$( $(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | .finding.osv] | unique | .[]' govulncheck-output.json | sort -u )"; \
+	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && rm -f govulncheck-output.json && exit 0; \
+	echo "Found: $$FOUND"; \
+	\
+	UNIGNORED=""; \
+	for id in $$FOUND; do \
+		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
+	done; \
+	UNIGNORED="$$(echo $$UNIGNORED | xargs)"; \
+	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && rm -f govulncheck-output.json && exit 0; \
+	\
+	echo "Vulnerabilities need attention: $$UNIGNORED"; \
+	echo ""; \
+	echo "Vulnerability Summary:"; \
+	echo "ID/LINK    SUMMARY    POSITION"; \
+	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | ["https://pkg.go.dev/vuln/" + .finding.osv, $$osv_data[.finding.osv].summary, (.finding.trace | map(select(.position != null or .symbol != null) | (.position // .symbol | tostring)) | join("; "))] ] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
+	rm -f govulncheck-output.json; \
+	exit 1
+
+.PHONY: toolchain
+toolchain:
+	$(GOCMD) get toolchain@none

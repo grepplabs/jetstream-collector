@@ -1,0 +1,21 @@
+{{- range $router := .Values.routers }}
+{{- range $destination := concat (index $router "otlp-destinations" | default list) (index $router "s3-destinations" | default list) }}
+{{- $consumerName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+
+---
+apiVersion: jetstream.nats.io/v1beta2
+kind: Consumer
+metadata:
+  name: {{ $consumerName }}
+spec:
+  streamName: LOGS_TENANT
+  durableName: {{ $consumerName }}
+  filterSubject: logs.tenant.{{ $router.tenantId }}
+  ackPolicy: explicit
+  deliverPolicy: new
+  replayPolicy: instant
+  ackWait: 120s
+  maxAckPending: 200
+  maxDeliver: -1
+{{- end }}
+{{- end }}

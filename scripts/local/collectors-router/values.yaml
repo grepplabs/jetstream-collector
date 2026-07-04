@@ -1,0 +1,28 @@
+
+nats:
+  url: nats://nats.nats.svc.cluster.local:4222
+
+routers:
+  - tenantId: 74af337b-886c-46aa-bfe2-f818b6d14420
+
+    otlp-destinations:
+      - destinationId: 512616ab-f1de-4bcd-87e4-5dfbcdb0e3fe
+        endpoint: http://loki-gateway.loki.svc.cluster.local/otlp/v1/logs
+        authorization: Basic bG9raTpsb2tpMTIz
+
+    s3-destinations:
+      - destinationId: 92c60094-94cf-4954-9363-f896a9f68ba9
+        bucket: bucket-92c60094-94cf-4954-9363-f896a9f68ba9
+        endpoint: http://seaweed-s3.seaweedfs-cluster.svc.cluster.local:8333
+
+  - tenantId: 19469859-93dc-4e05-bf60-9cf43e0cd57c
+
+    otlp-destinations:
+      - destinationId: a5c661dc-807e-47e1-bba7-f680026559f0
+        endpoint: http://loki-gateway.loki.svc.cluster.local/otlp/v1/logs
+        authorization: Basic bG9raTpsb2tpMTIz
+
+    s3-destinations:
+      - destinationId: f8c0fa53-367a-4696-8c3f-0fde71d77385
+        bucket: bucket-f8c0fa53-367a-4696-8c3f-0fde71d77385
+        endpoint: http://seaweed-s3.seaweedfs-cluster.svc.cluster.local:8333

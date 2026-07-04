@@ -1,0 +1,111 @@
+{{- range $router := .Values.routers }}
+{{- $collectorName := printf "router-%s" $router.tenantId }}
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ $collectorName }}
+spec:
+  mode: deployment
+  replicas: 1
+  image: local/jetstream-collector:local
+
+  env:
+{{- range $destination := index $router "s3-destinations" }}
+{{- $envSuffix := $destination.destinationId | replace "-" "_" | upper }}
+    - name: DESTINATION_{{ $envSuffix }}_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ $destination.bucket }}-s3-credentials
+          key: accessKey
+    - name: DESTINATION_{{ $envSuffix }}_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ $destination.bucket }}-s3-credentials
+          key: secretKey
+
+{{- end }}
+
+  config:
+    exporters:
+      debug:
+        verbosity: normal
+
+{{- range $destination := index $router "otlp-destinations" }}
+{{- $otlpExporterName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+      otlphttp/{{ $otlpExporterName }}:
+        logs_endpoint: {{ $destination.endpoint }}
+        headers:
+          Authorization: {{ $destination.authorization }}
+        sending_queue:
+          enabled: false
+          # wait_for_result: true
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 60s
+
+{{- end }}
+
+{{- range $destination := index $router "s3-destinations" }}
+{{- $s3ExporterName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+{{- $s3FilenameTemplate := printf "instance=%s-%s_$${timefmt:%%Y-%%m-%%d-%%H-%%M-%%S-%%f}" $router.tenantId $destination.destinationId }}
+{{- $envSuffix := $destination.destinationId | replace "-" "_" | upper }}
+      s3/{{ $s3ExporterName }}:
+        marshaler: proto
+        endpoint: {{ $destination.endpoint }}
+        bucket: {{ $destination.bucket }}
+        force_path_style: {{ $destination.force_path_style | default true }}
+        compression: {{ $destination.compression | default "gzip" }}
+        filename_template: {{ $s3FilenameTemplate }}
+        filename_append_uuid: false
+        credentials:
+          access_key_id: ${env:DESTINATION_{{ $envSuffix }}_ACCESS_KEY}
+          secret_access_key: ${env:DESTINATION_{{ $envSuffix }}_SECRET_KEY}
+{{- end }}
+
+    receivers:
+{{- range $destination := concat (index $router "otlp-destinations" | default list) (index $router "s3-destinations" | default list) }}
+{{- $consumerName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+      jetstream/{{ $consumerName }}:
+        url: {{ $.Values.nats.url }}
+        stream: LOGS_TENANT
+        subject: logs.tenant.{{ $router.tenantId }}
+        consumer_name: {{ $consumerName }}
+        workers: 10
+{{- end }}
+
+    service:
+      pipelines:
+
+{{- range $destination := index $router "otlp-destinations" }}
+{{- $otlpPipelineName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+        logs/{{ $otlpPipelineName }}:
+          receivers:
+            - jetstream/{{ $otlpPipelineName }}
+          exporters:
+            - debug
+            - otlphttp/{{ $otlpPipelineName }}
+{{- end }}
+{{- range $destination := index $router "s3-destinations" }}
+{{- $s3PipelineName := printf "tenant-%s-destination-%s-logs" $router.tenantId $destination.destinationId }}
+        logs/{{ $s3PipelineName }}:
+          receivers:
+            - jetstream/{{ $s3PipelineName }}
+          exporters:
+            - debug
+            - s3/{{ $s3PipelineName }}
+{{- end }}
+
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888
+{{- end }}

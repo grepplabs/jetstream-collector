@@ -1,0 +1,56 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true,topology.kubernetes.io/zone=eu-central-1"
+    extraPortMappings:
+      # NATs
+      - containerPort: 30422
+        hostPort: 30422
+        listenAddress: "127.0.0.1"
+      # Input OTLP/gRPC
+      - containerPort: 30417
+        hostPort: 30417
+        listenAddress: "127.0.0.1"
+      # Input OTLP/HTTP
+      - containerPort: 30418
+        hostPort: 30418
+        listenAddress: "127.0.0.1"
+      # Tenant OTLP/gRPC
+      - containerPort: 30517
+        hostPort: 30517
+        listenAddress: "127.0.0.1"
+      # Tenant OTLP/HTTP
+      - containerPort: 30518
+        hostPort: 30518
+        listenAddress: "127.0.0.1"
+      # seaweedfs
+      - containerPort: 30333
+        hostPort: 8333
+        listenAddress: "127.0.0.1"
+      # loki
+      - containerPort: 30322
+        hostPort: 3100
+        listenAddress: "0.0.0.0"
+      # Quickwit UI / REST http://localhost:7280/ui
+      - containerPort: 30280
+        hostPort: 7280
+        listenAddress: "0.0.0.0"
+      # Quickwit gRPC
+      - containerPort: 30281
+        hostPort: 7281
+        listenAddress: "0.0.0.0"
+      # VictoriaMetrics UI http://localhost:8428/vmui
+      - containerPort: 30428
+        hostPort: 8428
+        listenAddress: "0.0.0.0"
+      # OpenBao
+      - containerPort: 30200
+        hostPort: 8200
+        listenAddress: "0.0.0.0"

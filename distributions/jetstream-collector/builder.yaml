@@ -1,0 +1,66 @@
+dist:
+  module: github.com/grepplabs/jetstream-collector/cmd/jetstream-collector-ocb
+  name: jetstream-collector
+  description: JetStream OpenTelemetry Collector distribution
+  output_path: ./dist
+  version: 0.0.0-dev
+
+receivers:
+  - gomod: github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver v0.0.0
+    path: ../../receiver/jetstreamreceiver
+  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.159.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.159.0
+  - gomod: github.com/elastic/opentelemetry-collector-components/receiver/loadgenreceiver v0.70.0
+
+processors:
+  - gomod: github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor v0.0.0
+    path: ../../processor/kubemappingprocessor
+  - gomod: github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor v0.0.0
+    path: ../../processor/clientmetadataprocessor
+  - gomod: github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor v0.0.0
+    path: ../../processor/partitionbyattrsprocessor
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.159.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.159.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.159.0
+
+connectors:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.159.0
+
+exporters:
+  - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
+    path: ../../exporter/jetstreamexporter
+  - gomod: github.com/grepplabs/jetstream-collector/exporter/s3exporter v0.0.0
+    path: ../../exporter/s3exporter
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.159.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.159.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.159.0
+  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.159.0
+
+replaces:
+  - github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../../pkg/jetstream
+  - github.com/grepplabs/jetstream-collector/pkg/template => ../../../pkg/template
+
+providers:
+  - gomod: github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider v0.0.0
+    path: ../../confmap/provider/openbaoprovider
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.65.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.65.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.65.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.65.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.65.0
+
+extensions:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.159.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.159.0
+  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.159.0
+  - gomod: github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension v0.70.0
+
+telemetry:
+  gomod: go.opentelemetry.io/collector/service v0.159.0
+  import: go.opentelemetry.io/collector/service/telemetry/otelconftelemetry

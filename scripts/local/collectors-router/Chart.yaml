@@ -1,0 +1,6 @@
+apiVersion: v2
+name: collectors-router
+description: OTEL collector router
+type: application
+version: 0.1.0
+appVersion: "0.0.0"

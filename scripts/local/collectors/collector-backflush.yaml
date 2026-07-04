@@ -1,0 +1,88 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: backflush
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 1
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  env:
+    - name: BACKFLUSH_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: backflush-collector-s3-credentials
+          key: accessKey
+    - name: BACKFLUSH_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: backflush-collector-s3-credentials
+          key: secretKey
+
+  config:
+    receivers:
+      jetstream/backflush-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        stream: LOGS_INPUT
+        subject: logs.input
+        include_subject: true
+        consumer_name: backflush-logs
+        workers: 10
+
+    exporters:
+      debug/backflush:
+        verbosity: normal
+
+      s3/backflush-logs:
+        marshaler: proto
+        bucket: backflush
+        endpoint: http://seaweed-s3.seaweedfs-cluster.svc.cluster.local:8333
+        force_path_style: true
+        compression: gzip
+        filename_template: "resource=$${telemetry:acme.resource.type}_$${telemetry:acme.resource.id}/$${telemetry:acme.resource.id}_$${timefmt:%Y-%m-%d-%H-%M-%S-%f}"
+        filename_append_uuid: false
+        credentials:
+          access_key_id: ${env:BACKFLUSH_ACCESS_KEY}
+          secret_access_key: ${env:BACKFLUSH_SECRET_KEY}
+
+    processors:
+      partitionbyattrs/resource:
+        missing_attribute_action: error
+        partition_by:
+          telemetry:
+            - acme.resource.type
+            - acme.resource.id
+
+      filter/log-type/audit/keep:
+        error_mode: ignore
+        logs:
+          log_record:
+            - attributes["acme.log.type"] != "AUDIT" or attributes["acme.resource.type"] == nil or attributes["acme.resource.id"] == nil
+
+    service:
+      pipelines:
+        logs/backflush-logs:
+          receivers:
+            - jetstream/backflush-logs
+          processors:
+            - filter/log-type/audit/keep
+            - partitionbyattrs/resource
+          exporters:
+            - debug/backflush
+            - s3/backflush-logs
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

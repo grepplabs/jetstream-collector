@@ -1,0 +1,11 @@
+{{- range $link := .Values.links }}
+---
+apiVersion: api.hub.acme.cloud/v1alpha1
+kind: Link
+metadata:
+  name: {{ $link.name }}
+  labels:
+    acme.cloud/resource-id: {{ $link.resourceId }}
+spec:
+  tenantId: {{ $link.tenantId }}
+{{- end }}

@@ -1,0 +1,16 @@
+---
+apiVersion: jetstream.nats.io/v1beta2
+kind: Consumer
+metadata:
+  name: link-router-logs
+  namespace: collectors
+spec:
+  streamName: LOGS_RESOURCE
+  durableName: link-router-logs
+  filterSubject: logs.resource.*
+  ackPolicy: explicit
+  deliverPolicy: new
+  replayPolicy: instant
+  ackWait: 120s
+  maxAckPending: 200
+  maxDeliver: -1

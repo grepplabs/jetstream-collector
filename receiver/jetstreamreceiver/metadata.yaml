@@ -1,0 +1,22 @@
+type: jetstream
+scope_name: github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: receiver
+  stability:
+    alpha: [ logs, metrics, traces, profiles ]
+
+tests:
+  config:
+    url: nats://localhost:4222
+    stream: otel-jetstreamreceiver-lifecycle
+    subject: otel.jetstreamreceiver.lifecycle
+    consumer_name: shared
+    bootstrap:
+      stream:
+        name: otel-jetstreamreceiver-lifecycle
+        subjects: [ otel.jetstreamreceiver.lifecycle ]
+      consumer:
+        name: shared
+        filter_subject: otel.jetstreamreceiver.lifecycle

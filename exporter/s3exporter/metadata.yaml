@@ -1,0 +1,9 @@
+type: s3
+scope_name: github.com/grepplabs/jetstream-collector/exporter/s3exporter
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+

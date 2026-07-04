@@ -1,0 +1,73 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: victoriametrics-metrics
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 2
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  envFrom:
+    - secretRef:
+        name: victoriametrics
+
+  config:
+    extensions:
+      basicauth/victoriametrics:
+        client_auth:
+          username: ${env:VICTORIAMETRICS_USERNAME}
+          password: ${env:VICTORIAMETRICS_PASSWORD}
+
+    exporters:
+      otlphttp/victoriametrics:
+        metrics_endpoint: ${env:VICTORIAMETRICS_ENDPOINT}
+        compression: gzip
+        encoding: proto
+        auth:
+          authenticator: basicauth/victoriametrics
+
+        timeout: 15s
+        sending_queue:
+          enabled: false
+        retry_on_failure:
+          enabled: true
+          initial_interval: 1s
+          max_interval: 3s
+          max_elapsed_time: 15s
+
+    receivers:
+      jetstream/victoriametrics-metrics:
+        # url: nats://127.0.0.1:30422
+        url: nats://nats.nats.svc.cluster.local:4222
+        stream: METRICS_INPUT
+        subject: metrics.input
+        include_subject: true
+        consumer_name: victoriametrics-metrics
+        workers: 10
+
+    service:
+      extensions:
+        - basicauth/victoriametrics
+
+      pipelines:
+        metrics/victoriametrics:
+          receivers:
+            - jetstream/victoriametrics-metrics
+          exporters:
+            - otlphttp/victoriametrics
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

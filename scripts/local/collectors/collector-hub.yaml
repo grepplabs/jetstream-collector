@@ -1,0 +1,72 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: hub
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 1
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      protocol: TCP
+
+  config:
+    receivers:
+      otlp/input:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    exporters:
+      jetstream/logs-input:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject: logs.input
+        include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+      jetstream/metrics-input:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject: metrics.input
+        include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+    service:
+      pipelines:
+        logs/input:
+          receivers:
+            - otlp/input
+          exporters:
+            - jetstream/logs-input
+
+        metrics/input:
+          receivers:
+            - otlp/input
+          exporters:
+            - jetstream/metrics-input
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

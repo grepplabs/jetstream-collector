@@ -1,0 +1,26 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: ResourceReferenceGrant
+metadata:
+  name: allow-loki-to-seaweed
+  namespace: seaweedfs-cluster
+spec:
+  from:
+    - group: seaweed.seaweedfs.com
+      kind: Bucket
+      namespace: loki
+    - group: seaweed.seaweedfs.com
+      kind: S3Identity
+      namespace: loki
+    - group: seaweed.seaweedfs.com
+      kind: S3Credentials
+      namespace: loki
+    - group: seaweed.seaweedfs.com
+      kind: S3Policy
+      namespace: loki
+    - group: seaweed.seaweedfs.com
+      kind: S3PolicyBinding
+      namespace: loki
+  to:
+    - group: seaweed.seaweedfs.com
+      kind: Seaweed
+      name: seaweed

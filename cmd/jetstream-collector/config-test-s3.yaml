@@ -1,0 +1,73 @@
+processors:
+  clientmetadata/s3-test:
+    client_metadata:
+      - telemetry:acme.resource.id
+
+exporters:
+  s3/s3-test:
+    marshaler: proto
+    region: eu-central-1
+    bucket: michal-test
+    endpoint: https://object.storage.eu-central-1.acme.cloud
+    force_path_style: true
+    compression: gzip
+    filename_template: "jetstream-collector/michal-test/$${telemetry:acme.resource.id}/"
+    filename_append_uuid: true
+    credentials:
+      access_key_id: ${env:S3_ACCESS_KEY_ID}
+      secret_access_key: ${env:S3_SECRET_ACCESS_KEY}
+
+    timeout: 10s
+    sending_queue:
+      enabled: true
+      wait_for_result: true
+      num_consumers: 10
+      queue_size: 100
+      batch:
+        flush_timeout: 5s
+        sizer: items
+        min_size: 5
+        max_size: 50
+        partition:
+          metadata_keys:
+            - acme.resource.id
+
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 30s
+
+
+receivers:
+  jetstream/s3-test:
+    url: nats://127.0.0.1:30422
+    stream: LOGS_INPUT
+    subject: logs.input
+    consumer_name: s3-test
+    workers: 20
+    bootstrap:
+      consumer: { }
+
+service:
+  pipelines:
+    logs/s3-test:
+      receivers:
+        - jetstream/s3-test
+      processors:
+        - clientmetadata/s3-test
+      exporters:
+        - s3/s3-test
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

@@ -1,0 +1,7 @@
+type: kubemapping
+scope_name: github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor
+github_project: grepplabs/jetstream-collector
+status:
+  class: processor
+  stability:
+    alpha: [logs, metrics, traces]

@@ -1,0 +1,8 @@
+type: openbao
+scope_name: github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: provider
+  stability:
+    alpha: [provider]

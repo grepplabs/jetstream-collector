@@ -1,0 +1,67 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: splitter
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 2
+
+  image: local/jetstream-collector:local
+  # imagePullPolicy: Never
+
+  config:
+    receivers:
+      jetstream/splitter-resource-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        stream: LOGS_INPUT
+        subject: logs.input
+        include_subject: true
+        consumer_name: splitter-resource-logs
+        workers: 10
+
+    exporters:
+      jetstream/resource-logs:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject_pattern: logs.resource.$${telemetry:acme.resource.id}
+        include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+    processors:
+      partitionbyattrs/resourceid:
+        missing_attribute_action: error
+        partition_by:
+          telemetry:
+            - acme.resource.id
+
+      filter/resourceid/keep:
+        error_mode: ignore
+        logs:
+          log_record:
+            - attributes["acme.resource.id"] == nil
+
+    service:
+      pipelines:
+        logs/splitter-service:
+          receivers:
+            - jetstream/splitter-resource-logs
+          processors:
+            - filter/resourceid/keep
+            - partitionbyattrs/resourceid
+          exporters:
+            - jetstream/resource-logs
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888

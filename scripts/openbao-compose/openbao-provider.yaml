@@ -1,0 +1,16 @@
+# Bootstrap configuration for the OpenBao confmap provider.
+#
+# Store a Collector configuration in OpenBao:
+#   bao kv put -mount=secret otel/collector config=@config.yaml
+#
+# Run this distribution from cmd/jetstream-collector:
+#   BAO_CONFIG=./openbao-provider.yaml \
+#   BAO_ADDR=http://127.0.0.1:8200 \
+#   BAO_TOKEN=root \
+#   go run . --config=openbao:secret/otel/collector
+
+address: ${env:BAO_ADDR:-http://127.0.0.1:8200}
+auth:
+  method: token
+  token: ${env:BAO_TOKEN:-root}
+

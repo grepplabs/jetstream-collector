@@ -1,0 +1,14 @@
+apiVersion: jetstream.nats.io/v1beta2
+kind: Stream
+metadata:
+  name: logs-tenant
+  namespace: collectors
+spec:
+  name: LOGS_TENANT
+  subjects:
+    # logs.tenant.<tenant-id>
+    - logs.tenant.*
+  storage: file
+  retention: limits
+  maxAge: 4h
+  replicas: 3

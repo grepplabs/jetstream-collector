@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - s3-collectors-grant.yaml
+
+  # input
+  - stream-logs-input.yaml
+  - stream-metrics-input.yaml
+  - collector-hub.yaml
+  - service-hub-nodeport.yaml
+
+  # victoria metrics
+  - consumer-victoriametrics-metrics.yaml
+  - collector-victoriametrics-metrics.yaml
+
+  # splitter
+  - stream-logs-resource.yaml
+  - consumer-splitter-resource-logs.yaml
+  - collector-splitter.yaml
+
+
+  # tenant
+  - stream-logs-tenant.yaml
+  - stream-metrics-tenant.yaml
+  - collector-tenant.yaml
+  - service-tenant-nodeport.yaml
+
+  # link router
+  - consumer-link-router-logs.yaml
+  - collector-link-router-rbac.yaml
+  - collector-link-router.yaml
+
+  # backflush
+  - consumer-backflush-logs.yaml
+  - s3-backflush.yaml
+  - collector-backflush.yaml
+
+  # quickwit
+  - consumer-quickwit-logs.yaml
+  - collector-quickwit.yaml

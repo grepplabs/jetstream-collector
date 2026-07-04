@@ -1,0 +1,42 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Seaweed
+metadata:
+  name: seaweed
+  namespace: seaweedfs-cluster
+spec:
+  image: chrislusf/seaweedfs:4.40
+  volumeServerDiskCount: 1
+  master:
+    replicas: 1
+    volumeSizeLimitMB: 10240
+
+  volume:
+    replicas: 1
+    requests:
+      storage: 1Gi
+    rack: rack1
+    dataCenter: dc1
+    ingress:
+      enabled: false
+      host: seaweed-volume-0.seaweed.127.0.0.1.nip.io
+
+  filer:
+    replicas: 1
+    config: |
+      [leveldb2]
+      enabled = true
+      dir = "/data/filerldb2"
+    ingress:
+      enabled: true
+      host: filer.seaweed.127.0.0.1.nip.io
+
+  s3:
+    replicas: 1
+    configSecret:
+      name: seaweed-secret
+      key: seaweedfs_s3_config.json
+    port: 8333
+    ingress:
+      enabled: true
+      host: s3.seaweed.127.0.0.1.nip.io
+

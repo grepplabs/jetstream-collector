@@ -1,0 +1,91 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Bucket
+metadata:
+  name: backflush
+  namespace: collectors
+spec:
+  clusterRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Identity
+metadata:
+  name: backflush-collector
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  name: backflush-collector
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Credentials
+metadata:
+  name: backflush-collector
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  identityRef:
+    name: backflush-collector
+  secretRef:
+    name: backflush-collector-s3-credentials
+  reclaimPolicy: Delete
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3Policy
+metadata:
+  name: backflush-read-write
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  reclaimPolicy: Delete
+  statements:
+    - effect: Allow
+      actions:
+        - s3:ListBucket
+        - s3:GetBucketLocation
+        - s3:ListBucketMultipartUploads
+      resources:
+        - backflush
+
+    - effect: Allow
+      actions:
+        - s3:GetObject
+        - s3:GetObjectVersion
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:DeleteObjectVersion
+        - s3:GetObjectTagging
+        - s3:PutObjectTagging
+        - s3:DeleteObjectTagging
+        - s3:AbortMultipartUpload
+        - s3:ListMultipartUploadParts
+      resources:
+        - backflush/*
+
+---
+apiVersion: seaweed.seaweedfs.com/v1
+kind: S3PolicyBinding
+metadata:
+  name: backflush-collector
+  namespace: collectors
+spec:
+  seaweedRef:
+    name: seaweed
+    namespace: seaweedfs-cluster
+  policyRef:
+    name: backflush-read-write
+  subjects:
+    - kind: S3Identity
+      name: backflush-collector
+  reclaimPolicy: Delete

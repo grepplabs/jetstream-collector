@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../cert-manager
+  - ../nats
+  - ../nack
+  - ../opentelemetry-operator
+  - ../seaweedfs-operator
+  - ../seaweedfs-cluster
+  - ../loki
+  - ../victoria-metrics-single
+  - ../quickwit
+  - ../openbao
+  - ../collectors

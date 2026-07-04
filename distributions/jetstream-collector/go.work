@@ -1,0 +1,13 @@
+go 1.26.7
+
+use (
+	./dist
+	../../confmap/provider/openbaoprovider
+	../../pkg/jetstream
+	../../pkg/template
+	../../exporter/jetstreamexporter
+	../../exporter/s3exporter
+	../../processor/partitionbyattrsprocessor
+	../../processor/kubemappingprocessor
+	../../receiver/jetstreamreceiver
+)

@@ -1,0 +1,17 @@
+type: jetstream
+scope_name: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: exporter
+  stability:
+    alpha: [ logs, metrics, traces, profiles ]
+
+tests:
+  config:
+    url: nats://localhost:4222
+    subject: otel.jetstreamexporter.lifecycle
+    bootstrap:
+      stream:
+        name: otel-jetstreamexporter-lifecycle
+        subjects: [ otel.jetstreamexporter.lifecycle ]

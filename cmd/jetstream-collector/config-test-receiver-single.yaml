@@ -1,0 +1,35 @@
+exporters:
+  nop:
+
+receivers:
+  jetstream/receiver-single:
+    url: nats://127.0.0.1:30422
+    stream: LOGS_INPUT
+    subject: logs.input
+    consumer_name: receiver-single
+    workers: 32
+    bootstrap:
+      consumer: { }
+
+service:
+  pipelines:
+    logs/receiver-single:
+      receivers:
+        - jetstream/receiver-single
+      exporters:
+        - nop
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

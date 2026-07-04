@@ -1,0 +1,24 @@
+namespaceOverride: nats
+service:
+  name: nats
+  ports:
+    nats:
+      nodePort: 30422
+  patch:
+    - op: add
+      path: /spec/type
+      value: NodePort
+
+config:
+  cluster:
+    enabled: true
+  jetstream:
+    enabled: true
+    memoryStore:
+      enabled: false
+  nats:
+    tls:
+      enabled: false
+
+tlsCA:
+  enabled: false
