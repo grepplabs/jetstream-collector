@@ -38,3 +38,94 @@ The repository is organized into these areas:
 | --- | --- | --- |
 | `openbao` | Loads Collector configuration or individual fields from OpenBao KV v2 secrets. | [openbaoprovider](confmap/provider/openbaoprovider/README.md) |
 
+## Examples
+
+### OTLP Ingress
+
+```yaml
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otlp-in
+  namespace: collectors
+spec:
+  mode: deployment
+  replicas: 1
+
+  image: ghcr.io/grepplabs/jetstream-collector:0.1
+
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      protocol: TCP
+
+  config:
+    receivers:
+      otlp/input:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    exporters:
+      jetstream/logs-input:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject: logs.input
+        include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+      jetstream/metrics-input:
+        url: nats://nats.nats.svc.cluster.local:4222
+        subject: metrics.input
+        include_subject: true
+        compression: gzip
+        content_type: proto
+        msg_id: true
+
+    service:
+      pipelines:
+        logs/input:
+          receivers:
+            - otlp/input
+          exporters:
+            - jetstream/logs-input
+
+        metrics/input:
+          receivers:
+            - otlp/input
+          exporters:
+            - jetstream/metrics-input
+
+      telemetry:
+        logs:
+          level: debug
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888
+```
+
+### Local Examples
+
+The `scripts/local/collectors` directory contains runnable example collector manifests that use the published image `ghcr.io/grepplabs/jetstream-collector:0.1`.
+
+Recommended examples to start with:
+
+| Manifest                                                           | Purpose                                                                                                |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [otlp-in](scripts/local/collectors/collector-hub.yaml)        | OTLP ingress example that accepts OTLP and publishes logs and metrics to JetStream.                       |
+| [tenant](scripts/local/collectors/collector-tenant.yaml)           | Tenant-aware routing example that uses OTLP metadata to publish to tenant-specific JetStream subjects. |
+| [splitter](scripts/local/collectors/collector-splitter.yaml)   | Log splitting example that partitions records by resource attributes before publishing them.           |
+| [s3](scripts/local/collectors/collector-backflush.yaml)       | S3-backed example that writes logs to S3-compatible object storage.                                          |
+| [link-router](scripts/local/collectors/collector-link-router.yaml) | Kubernetes mapping example that routes logs based on tenant metadata derived from a CRD.                      |
