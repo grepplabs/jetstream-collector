@@ -11,8 +11,15 @@ import (
 
 func TestNewDefaultConfig(t *testing.T) {
 	cfg := NewDefaultConfig()
+	require.Empty(t, cfg.Stream)
+	require.Empty(t, cfg.Subject)
+	require.Empty(t, cfg.ConsumerName)
+	require.Zero(t, cfg.Workers)
 
-	require.Equal(t, time.Second, cfg.ConsumeRetryDelay)
+	require.Equal(t, time.Second, cfg.ConsumeRetry.InitialDelay)
+	require.Equal(t, consumeRetryStrategyConstant, cfg.ConsumeRetry.Strategy)
+	require.Equal(t, float64(2), cfg.ConsumeRetry.Multiplier)
+	require.Equal(t, 30*time.Second, cfg.ConsumeRetry.MaxDelay)
 	require.Equal(t, sharedjetstream.DefaultURL, cfg.URL)
 	require.Equal(t, sharedjetstream.CompressionNone, cfg.Compression)
 	require.False(t, cfg.IncludeSubject)
@@ -22,10 +29,26 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.False(t, cfg.BatchGroupBySubject)
 	require.Equal(t, defaultConsumeDurationBuckets, cfg.MetricsBuckets.ConsumeDuration)
 	require.Equal(t, defaultPayloadSizeBuckets, cfg.MetricsBuckets.PayloadSize)
+	require.Equal(t, sharedjetstream.BootstrapConfig{}, cfg.Bootstrap)
+	require.Equal(t, sharedjetstream.TLSConfig{}, cfg.TLS)
+	require.Equal(t, sharedjetstream.AuthConfig{}, cfg.Auth)
+}
+
+func TestConsumeRetryDelayForAttempt(t *testing.T) {
+	cfg := ConsumeRetryConfig{InitialDelay: time.Second, Multiplier: 2, MaxDelay: 5 * time.Second}
+
+	require.Equal(t, time.Second, cfg.delayForAttempt(1))
+	require.Equal(t, 2*time.Second, cfg.delayForAttempt(2))
+	require.Equal(t, 4*time.Second, cfg.delayForAttempt(3))
+	require.Equal(t, 5*time.Second, cfg.delayForAttempt(4))
 }
 
 func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 	cfg := NewDefaultConfig()
+	require.Empty(t, cfg.Stream)
+	require.Empty(t, cfg.Subject)
+	require.Empty(t, cfg.ConsumerName)
+	require.Zero(t, cfg.Workers)
 	conf := confmap.NewFromStringMap(map[string]any{
 		"metrics_buckets": map[string]any{
 			"consume_duration": []any{0.01, 0.1, 1.0},
@@ -36,6 +59,9 @@ func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 
 	require.Equal(t, []float64{0.01, 0.1, 1.0}, cfg.MetricsBuckets.ConsumeDuration)
 	require.Equal(t, defaultPayloadSizeBuckets, cfg.MetricsBuckets.PayloadSize)
+	require.Equal(t, sharedjetstream.BootstrapConfig{}, cfg.Bootstrap)
+	require.Equal(t, sharedjetstream.TLSConfig{}, cfg.TLS)
+	require.Equal(t, sharedjetstream.AuthConfig{}, cfg.Auth)
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -93,11 +119,11 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "zero consume retry delay",
 			cfg: &Config{
-				URL:               "nats://localhost:4222",
-				Stream:            "otel",
-				Subject:           "otel.logs",
-				ConsumerName:      "shared",
-				ConsumeRetryDelay: 0,
+				URL:          "nats://localhost:4222",
+				Stream:       "otel",
+				Subject:      "otel.logs",
+				ConsumerName: "shared",
+				ConsumeRetry: ConsumeRetryConfig{InitialDelay: 0},
 			},
 		},
 		{
@@ -146,11 +172,11 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "negative consume retry delay",
 			cfg: &Config{
-				URL:               "nats://localhost:4222",
-				Stream:            "otel",
-				Subject:           "otel.logs",
-				ConsumerName:      "shared",
-				ConsumeRetryDelay: -1 * time.Second,
+				URL:          "nats://localhost:4222",
+				Stream:       "otel",
+				Subject:      "otel.logs",
+				ConsumerName: "shared",
+				ConsumeRetry: ConsumeRetryConfig{InitialDelay: -1 * time.Second},
 			},
 			wantErr: true,
 		},

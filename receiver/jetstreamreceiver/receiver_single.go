@@ -139,14 +139,31 @@ func (r *jetstreamReceiver) retryOrReturnError(ctx context.Context, msg decodedM
 	r.metrics.recordConsumeFailure(ctx, signal, failureStageConsumeRetryable, msg.Subject)
 	msg.logRetryMessage(operation, err)
 
-	if r.cfg.ConsumeRetryDelay > 0 {
-		if nakErr := msg.NakWithDelay(r.cfg.ConsumeRetryDelay); nakErr != nil {
+	if delay := r.consumeRetryDelay(msg); delay > 0 {
+		if nakErr := msg.NakWithDelay(delay); nakErr != nil {
 			return fmt.Errorf("%s: nak message: %w", operation, nakErr)
 		}
 	} else if nakErr := msg.Nak(); nakErr != nil {
 		return fmt.Errorf("%s: nak message: %w", operation, nakErr)
 	}
 	return nil
+}
+
+func (r *jetstreamReceiver) consumeRetryDelay(msg decodedMessage) time.Duration {
+	cfg := r.cfg.ConsumeRetry
+	switch cfg.Strategy {
+	case consumeRetryStrategyNone:
+		return 0
+	case consumeRetryStrategyExponential:
+		if metadata, err := msg.Msg().Metadata(); err == nil {
+			return cfg.delayForAttempt(metadata.NumDelivered)
+		}
+		return cfg.InitialDelay
+	case consumeRetryStrategyConstant, "":
+		return cfg.InitialDelay
+	default:
+		return cfg.InitialDelay
+	}
 }
 
 func unmarshalPayload(req interface {

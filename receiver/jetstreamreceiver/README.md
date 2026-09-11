@@ -19,6 +19,9 @@ receivers:
       payload_size: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
     batch_group_by_subject: false
     compression: none
+    consume_retry:
+      strategy: constant
+      initial_delay: 1s
     bootstrap:
       stream:
         name: otel_logs
@@ -51,9 +54,25 @@ receivers:
 - `batch_group_by_subject`: When enabled in batch mode, decoded messages are grouped by subject before downstream processing. Default: `false`.
 - `include_subject`: When enabled, consume-side custom metrics add a `subject` attribute. Default: `false`.
 - `compression`: Default payload compression when `Content-Encoding` is missing. Supported values: `none`, `identity`, `gzip`. Default: `none`.
+- `consume_retry`: Optional retry policy. See the `consume_retry` section below.
 - `bootstrap`: Optional JetStream bootstrap container. Set `bootstrap.stream` and `bootstrap.consumer` as needed.
 - `tls`: Optional TLS client config.
 - `auth`: Optional NATS auth config.
+
+### `consume_retry`
+
+The optional consume retry policy controls how retryable downstream consume errors are negatively acknowledged.
+
+```yaml
+consume_retry:
+  strategy: constant
+  initial_delay: 1s
+```
+
+- `consume_retry.strategy`: Retry delay strategy. Supported values: `none`, `constant`, and `exponential`. Default: `constant`.
+- `consume_retry.initial_delay`: Delay before the first retry. Default: `1s`. Ignored when the strategy is `none`.
+- `consume_retry.multiplier`: Exponential delay multiplier. Default: `2`. Used only by the `exponential` strategy.
+- `consume_retry.max_delay`: Maximum exponential retry delay. Default: `30s`. Used only by the `exponential` strategy.
 
 ### `bootstrap`
 

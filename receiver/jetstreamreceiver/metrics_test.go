@@ -87,7 +87,7 @@ func TestJetstreamReceiverMetricsRecordRetryableConsumeFailure(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, msg.acked)
 	require.True(t, msg.nacked)
-	require.Equal(t, r.cfg.ConsumeRetryDelay, msg.nakDelay)
+	require.Equal(t, r.cfg.ConsumeRetry.InitialDelay, msg.nakDelay)
 	require.Empty(t, msg.termReason)
 
 	rm := collectReceiverMetrics(t, reader)
