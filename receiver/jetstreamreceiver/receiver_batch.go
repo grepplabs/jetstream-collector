@@ -234,8 +234,8 @@ func (r *jetstreamReceiver) retryOrReturnErrorBatch(ctx context.Context, msgs []
 		msg := msgs[i]
 		r.metrics.recordConsumeFailure(ctx, signal, failureStageConsumeRetryable, msg.Subject)
 		msg.logRetryMessage(operation, err)
-		if r.cfg.ConsumeRetryDelay > 0 {
-			retryErr = errors.Join(retryErr, msg.NakWithDelay(r.cfg.ConsumeRetryDelay))
+		if delay := r.consumeRetryDelay(msg); delay > 0 {
+			retryErr = errors.Join(retryErr, msg.NakWithDelay(delay))
 		} else {
 			retryErr = errors.Join(retryErr, msg.Nak())
 		}
