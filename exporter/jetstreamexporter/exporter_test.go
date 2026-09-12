@@ -11,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -84,6 +85,18 @@ func TestDefaultConfigHasHelperDefaults(t *testing.T) {
 	require.Equal(t, 1.5, cfg.RetryOnFailure.Multiplier)
 	require.Equal(t, 5*time.Second, cfg.RetryOnFailure.MaxInterval)
 	require.Equal(t, 10*time.Second, cfg.RetryOnFailure.MaxElapsedTime)
+}
+
+func TestConfigConnectionUnmarshal(t *testing.T) {
+	cfg := NewDefaultConfig()
+	conf := confmap.NewFromStringMap(map[string]any{
+		"connection": map[string]any{
+			"domain": "HUB",
+		},
+	})
+
+	require.NoError(t, conf.Unmarshal(cfg))
+	require.Equal(t, "HUB", cfg.Connection.Domain)
 }
 
 func TestValidateNormalizesConfig(t *testing.T) {

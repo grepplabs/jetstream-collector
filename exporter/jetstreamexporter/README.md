@@ -22,6 +22,8 @@ exporters:
     sending_queue:
       enabled: true
       queue_size: 1000
+    connection:
+      domain: ""
     bootstrap:
       stream:
         name: otel_logs
@@ -47,6 +49,7 @@ exporters:
 - `timeout`: Export timeout used by the collector exporter helper. Default: `5s`.
 - `retry_on_failure`: Standard collector retry configuration. Default: retries disabled.
 - `sending_queue`: Standard collector exporter queue configuration. Omit it to keep queueing disabled, or set it to enable the helper queue.
+- `connection`: Optional NATS/JetStream connection settings. See the `connection` section below.
 - `bootstrap`: Optional JetStream bootstrap container. Set `bootstrap.stream` to provision the stream before the exporter starts.
 - `headers`: Optional static headers added to every message before protocol headers are set.
 - `metadata_headers`: A list of metadata header names to copy from `client.FromContext(ctx).Metadata` into NATS headers. Each matching metadata value is appended to the message header.
@@ -91,6 +94,10 @@ This section uses the standard collector exporter queue configuration.
 - `queue_size`: Maximum number of queued requests.
 - `num_consumers`: Number of queue workers.
 - `batch`: Optional queue batching settings when supported by the collector helper.
+
+### `connection`
+
+- `connection.domain`: Optional JetStream domain. Set this when publishing through a leaf node or another topology that exposes JetStream under a named domain. Empty uses the server's default JetStream domain.
 
 ### `headers`
 

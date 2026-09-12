@@ -1,0 +1,146 @@
+# CORE / EDGE JetStream domain topology test.
+#
+# Expected local NATS topology from scripts/nats-compose/docker-compose.yaml:
+#   CORE    domain CORE    at nats://127.0.0.1:4224
+#   EDGE_01 domain EDGE_01 at nats://127.0.0.1:4225
+#   EDGE_02 domain EDGE_02 at nats://127.0.0.1:4226
+#
+# Start NATS:
+#   docker compose -f scripts/nats-compose/docker-compose.yaml up nats-core nats-edge-01 nats-edge-02
+#
+# This config publishes OTLP logs received by the collector into CORE/LOGS_ROUTED
+# and consumes tenant logs from EDGE_01 and EDGE_02. The EDGE LOGS_TENANT
+# streams are bootstrapped as sourced streams from CORE/LOGS_ROUTED.
+#
+# EDGE_01 source transform:
+#   CORE/LOGS_ROUTED edge.edge_01.tenant.*.logs -> EDGE_01/LOGS_TENANT logs.tenant.{{wildcard(1)}}
+# EDGE_02 source transform:
+#   CORE/LOGS_ROUTED edge.edge_02.tenant.*.logs -> EDGE_02/LOGS_TENANT logs.tenant.{{wildcard(1)}}
+#
+# Inspect with nats CLI:
+#   nats --server nats://127.0.0.1:4224 --js-domain CORE stream report
+#   nats --server nats://127.0.0.1:4224 --js-domain CORE consumer report LOGS_ROUTED
+#   nats --server nats://127.0.0.1:4225 --js-domain EDGE_01 stream report
+#   nats --server nats://127.0.0.1:4225 --js-domain EDGE_01 consumer report LOGS_TENANT
+#   nats --server nats://127.0.0.1:4226 --js-domain EDGE_02 stream report
+#   nats --server nats://127.0.0.1:4226 --js-domain EDGE_02 consumer report LOGS_TENANT
+#
+
+receivers:
+  otlp/domain-input:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+
+  jetstream/edge-01-tenant-logs:
+    url: nats://127.0.0.1:4225
+    connection:
+      domain: EDGE_01
+    stream: LOGS_TENANT
+    subject: logs.tenant.*
+    consumer_name: domain-edge-01-debug
+    include_subject: true
+    workers: 4
+    bootstrap:
+      stream:
+        name: LOGS_TENANT
+        storage: file
+        sources:
+          - name: LOGS_ROUTED
+            domain: CORE
+            subject_transforms:
+              - source: edge.edge_01.tenant.*.logs
+                destination: logs.tenant.{{wildcard(1)}}
+      consumer:
+        name: domain-edge-01-debug
+        filter_subject: logs.tenant.*
+        deliver_policy: new
+        ack_wait: 60s
+        max_ack_pending: 1024
+
+  jetstream/edge-02-tenant-logs:
+    url: nats://127.0.0.1:4226
+    connection:
+      domain: EDGE_02
+    stream: LOGS_TENANT
+    subject: logs.tenant.*
+    consumer_name: domain-edge-02-debug
+    include_subject: true
+    workers: 4
+    bootstrap:
+      stream:
+        name: LOGS_TENANT
+        storage: file
+        sources:
+          - name: LOGS_ROUTED
+            domain: CORE
+            subject_transforms:
+              - source: edge.edge_02.tenant.*.logs
+                destination: logs.tenant.{{wildcard(1)}}
+      consumer:
+        name: domain-edge-02-debug
+        filter_subject: logs.tenant.*
+        deliver_policy: new
+        ack_wait: 60s
+        max_ack_pending: 1024
+
+exporters:
+  # Publish incoming test logs to CORE/LOGS_ROUTED. Change the subject to target
+  # EDGE_02, for example: edge.edge_02.tenant.tenant-789.logs.
+  jetstream/core-edge-01-tenant-123-logs:
+    url: nats://127.0.0.1:4224
+    connection:
+      domain: CORE
+    subject: edge.edge_01.tenant.tenant-123.logs
+    include_subject: true
+    compression: gzip
+    content_type: proto
+    msg_id: true
+    bootstrap:
+      stream:
+        name: LOGS_ROUTED
+        subjects: [edge.*.tenant.*.logs]
+        storage: file
+
+  debug/edge-01-tenant-logs:
+    verbosity: detailed
+
+  debug/edge-02-tenant-logs:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs/publish-core-routed:
+      receivers:
+        - otlp/domain-input
+      exporters:
+        - jetstream/core-edge-01-tenant-123-logs
+
+    logs/edge-01-debug:
+      receivers:
+        - jetstream/edge-01-tenant-logs
+      exporters:
+        - debug/edge-01-tenant-logs
+
+    logs/edge-02-debug:
+      receivers:
+        - jetstream/edge-02-tenant-logs
+      exporters:
+        - debug/edge-02-tenant-logs
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

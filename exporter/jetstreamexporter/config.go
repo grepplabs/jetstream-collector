@@ -31,6 +31,7 @@ type Config struct {
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
 	RetryOnFailure  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 	SendingQueue    configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	Connection      sharedjetstream.ConnectionConfig                         `mapstructure:"connection"`
 	TLS             sharedjetstream.TLSConfig                                `mapstructure:"tls"`
 	Auth            sharedjetstream.AuthConfig                               `mapstructure:"auth"`
 }

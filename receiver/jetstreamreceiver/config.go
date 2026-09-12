@@ -37,22 +37,23 @@ type ConsumeRetryConfig struct {
 }
 
 type Config struct {
-	URL                 string                          `mapstructure:"url"`
-	Stream              string                          `mapstructure:"stream"`
-	Subject             string                          `mapstructure:"subject"`
-	IncludeSubject      bool                            `mapstructure:"include_subject"`
-	ConsumerName        string                          `mapstructure:"consumer_name"`
-	ProcessingMode      string                          `mapstructure:"processing_mode"`
-	Workers             int                             `mapstructure:"workers"`
-	BatchMaxMessages    int32                           `mapstructure:"batch_max_messages"`
-	BatchMaxWait        time.Duration                   `mapstructure:"batch_max_wait"`
-	BatchGroupBySubject bool                            `mapstructure:"batch_group_by_subject"`
-	Compression         string                          `mapstructure:"compression"`
-	ConsumeRetry        ConsumeRetryConfig              `mapstructure:"consume_retry"`
-	MetricsBuckets      MetricsBucketsConfig            `mapstructure:"metrics_buckets"`
-	Bootstrap           sharedjetstream.BootstrapConfig `mapstructure:"bootstrap"`
-	TLS                 sharedjetstream.TLSConfig       `mapstructure:"tls"`
-	Auth                sharedjetstream.AuthConfig      `mapstructure:"auth"`
+	URL                 string                           `mapstructure:"url"`
+	Stream              string                           `mapstructure:"stream"`
+	Subject             string                           `mapstructure:"subject"`
+	IncludeSubject      bool                             `mapstructure:"include_subject"`
+	ConsumerName        string                           `mapstructure:"consumer_name"`
+	ProcessingMode      string                           `mapstructure:"processing_mode"`
+	Workers             int                              `mapstructure:"workers"`
+	BatchMaxMessages    int32                            `mapstructure:"batch_max_messages"`
+	BatchMaxWait        time.Duration                    `mapstructure:"batch_max_wait"`
+	BatchGroupBySubject bool                             `mapstructure:"batch_group_by_subject"`
+	Compression         string                           `mapstructure:"compression"`
+	ConsumeRetry        ConsumeRetryConfig               `mapstructure:"consume_retry"`
+	MetricsBuckets      MetricsBucketsConfig             `mapstructure:"metrics_buckets"`
+	Bootstrap           sharedjetstream.BootstrapConfig  `mapstructure:"bootstrap"`
+	Connection          sharedjetstream.ConnectionConfig `mapstructure:"connection"`
+	TLS                 sharedjetstream.TLSConfig        `mapstructure:"tls"`
+	Auth                sharedjetstream.AuthConfig       `mapstructure:"auth"`
 }
 
 func (cfg *Config) consumerName() (string, error) {
