@@ -48,35 +48,56 @@ type AuthConfig struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 }
 
+// ConnectionConfig controls connection-level NATS and JetStream options.
+type ConnectionConfig struct {
+	// Domain optionally selects a JetStream domain, e.g. when publishing through a leaf node to a hub. Empty uses the server's default domain.
+	// See: https://docs.nats.io/running-a-nats-service/configuration/leafnodes/jetstream_leafnodes
+	Domain string `mapstructure:"domain"`
+}
+
 // BootstrapStreamConfig describes a JetStream stream that can be provisioned at startup.
+type BootstrapSubjectTransformConfig struct {
+	Source      string `mapstructure:"source"`
+	Destination string `mapstructure:"destination"`
+}
+
+// BootstrapStreamSourceConfig describes a sourced stream used by startup provisioning.
+type BootstrapStreamSourceConfig struct {
+	Name              string                            `mapstructure:"name"`
+	Domain            string                            `mapstructure:"domain"`
+	FilterSubject     string                            `mapstructure:"filter_subject"`
+	SubjectTransforms []BootstrapSubjectTransformConfig `mapstructure:"subject_transforms"`
+}
+
 type BootstrapStreamConfig struct {
-	Name                   string            `mapstructure:"name"`
-	Subjects               []string          `mapstructure:"subjects"`
-	Description            string            `mapstructure:"description"`
-	Retention              string            `mapstructure:"retention"`
-	MaxConsumers           int               `mapstructure:"max_consumers"`
-	MaxMsgs                int64             `mapstructure:"max_msgs"`
-	MaxBytes               int64             `mapstructure:"max_bytes"`
-	Discard                string            `mapstructure:"discard"`
-	DiscardNewPerSubject   bool              `mapstructure:"discard_new_per_subject"`
-	MaxAge                 time.Duration     `mapstructure:"max_age"`
-	MaxMsgsPerSubject      int64             `mapstructure:"max_msgs_per_subject"`
-	MaxMsgSize             int32             `mapstructure:"max_msg_size"`
-	Storage                string            `mapstructure:"storage"`
-	Replicas               int               `mapstructure:"num_replicas"`
-	NoAck                  bool              `mapstructure:"no_ack"`
-	Duplicates             time.Duration     `mapstructure:"duplicate_window"`
-	Sealed                 bool              `mapstructure:"sealed"`
-	DenyDelete             bool              `mapstructure:"deny_delete"`
-	DenyPurge              bool              `mapstructure:"deny_purge"`
-	AllowRollup            bool              `mapstructure:"allow_rollup_hdrs"`
-	Compression            string            `mapstructure:"compression"`
-	FirstSeq               uint64            `mapstructure:"first_seq"`
-	AllowDirect            bool              `mapstructure:"allow_direct"`
-	MirrorDirect           bool              `mapstructure:"mirror_direct"`
-	AllowMsgTTL            bool              `mapstructure:"allow_msg_ttl"`
-	SubjectDeleteMarkerTTL time.Duration     `mapstructure:"subject_delete_marker_ttl"`
-	Metadata               map[string]string `mapstructure:"metadata"`
+	Name                   string                        `mapstructure:"name"`
+	Subjects               []string                      `mapstructure:"subjects"`
+	Sources                []BootstrapStreamSourceConfig `mapstructure:"sources"`
+	Description            string                        `mapstructure:"description"`
+	Retention              string                        `mapstructure:"retention"`
+	MaxConsumers           int                           `mapstructure:"max_consumers"`
+	MaxMsgs                int64                         `mapstructure:"max_msgs"`
+	MaxBytes               int64                         `mapstructure:"max_bytes"`
+	Discard                string                        `mapstructure:"discard"`
+	DiscardNewPerSubject   bool                          `mapstructure:"discard_new_per_subject"`
+	MaxAge                 time.Duration                 `mapstructure:"max_age"`
+	MaxMsgsPerSubject      int64                         `mapstructure:"max_msgs_per_subject"`
+	MaxMsgSize             int32                         `mapstructure:"max_msg_size"`
+	Storage                string                        `mapstructure:"storage"`
+	Replicas               int                           `mapstructure:"num_replicas"`
+	NoAck                  bool                          `mapstructure:"no_ack"`
+	Duplicates             time.Duration                 `mapstructure:"duplicate_window"`
+	Sealed                 bool                          `mapstructure:"sealed"`
+	DenyDelete             bool                          `mapstructure:"deny_delete"`
+	DenyPurge              bool                          `mapstructure:"deny_purge"`
+	AllowRollup            bool                          `mapstructure:"allow_rollup_hdrs"`
+	Compression            string                        `mapstructure:"compression"`
+	FirstSeq               uint64                        `mapstructure:"first_seq"`
+	AllowDirect            bool                          `mapstructure:"allow_direct"`
+	MirrorDirect           bool                          `mapstructure:"mirror_direct"`
+	AllowMsgTTL            bool                          `mapstructure:"allow_msg_ttl"`
+	SubjectDeleteMarkerTTL time.Duration                 `mapstructure:"subject_delete_marker_ttl"`
+	Metadata               map[string]string             `mapstructure:"metadata"`
 }
 
 // BootstrapConsumerConfig describes a JetStream pull consumer that can be provisioned at startup.
@@ -121,12 +142,25 @@ func (cfg BootstrapConfig) Validate() error {
 		if strings.TrimSpace(stream.Name) == "" {
 			return fmt.Errorf("stream.name is required")
 		}
-		if len(stream.Subjects) == 0 {
-			return fmt.Errorf("stream.subjects are required")
+		if len(stream.Subjects) == 0 && len(stream.Sources) == 0 {
+			return fmt.Errorf("stream.subjects or stream.sources are required")
 		}
 		for i, subject := range stream.Subjects {
 			if strings.TrimSpace(subject) == "" {
 				return fmt.Errorf("stream.subjects[%d] is empty", i)
+			}
+		}
+		for i, source := range stream.Sources {
+			if strings.TrimSpace(source.Name) == "" {
+				return fmt.Errorf("stream.sources[%d].name is required", i)
+			}
+			for j, transform := range source.SubjectTransforms {
+				if strings.TrimSpace(transform.Source) == "" {
+					return fmt.Errorf("stream.sources[%d].subject_transforms[%d].source is required", i, j)
+				}
+				if strings.TrimSpace(transform.Destination) == "" {
+					return fmt.Errorf("stream.sources[%d].subject_transforms[%d].destination is required", i, j)
+				}
 			}
 		}
 		if _, err := normalizeRetentionPolicy(stream.Retention); err != nil {
@@ -230,6 +264,26 @@ func buildStreamConfig(stream configoptional.Optional[BootstrapStreamConfig]) (n
 	cfg := natsjetstream.StreamConfig{Name: streamCfg.Name}
 	if len(streamCfg.Subjects) > 0 {
 		cfg.Subjects = append([]string(nil), streamCfg.Subjects...)
+	}
+	if len(streamCfg.Sources) > 0 {
+		cfg.Sources = make([]*natsjetstream.StreamSource, 0, len(streamCfg.Sources))
+		for _, source := range streamCfg.Sources {
+			sourceCfg := &natsjetstream.StreamSource{
+				Name:          strings.TrimSpace(source.Name),
+				Domain:        strings.TrimSpace(source.Domain),
+				FilterSubject: strings.TrimSpace(source.FilterSubject),
+			}
+			if len(source.SubjectTransforms) > 0 {
+				sourceCfg.SubjectTransforms = make([]natsjetstream.SubjectTransformConfig, 0, len(source.SubjectTransforms))
+				for _, transform := range source.SubjectTransforms {
+					sourceCfg.SubjectTransforms = append(sourceCfg.SubjectTransforms, natsjetstream.SubjectTransformConfig{
+						Source:      strings.TrimSpace(transform.Source),
+						Destination: strings.TrimSpace(transform.Destination),
+					})
+				}
+			}
+			cfg.Sources = append(cfg.Sources, sourceCfg)
+		}
 	}
 	cfg.Description = streamCfg.Description
 	if streamCfg.Retention != "" {
@@ -387,7 +441,7 @@ func normalizeDeliverPolicy(value string) (natsjetstream.DeliverPolicy, error) {
 	}
 }
 
-func Connect(url string, tlsCfg TLSConfig, authCfg AuthConfig, logger *zap.Logger) (natsjetstream.JetStream, error) {
+func Connect(url string, tlsCfg TLSConfig, authCfg AuthConfig, connCfg ConnectionConfig, logger *zap.Logger) (natsjetstream.JetStream, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -416,12 +470,19 @@ func Connect(url string, tlsCfg TLSConfig, authCfg AuthConfig, logger *zap.Logge
 	if err != nil {
 		return nil, err
 	}
-	js, err := natsjetstream.New(conn)
+	js, err := newJetStream(conn, connCfg)
 	if err != nil {
 		conn.Close()
 		return nil, err
 	}
 	return js, nil
+}
+
+func newJetStream(conn *nats.Conn, cfg ConnectionConfig) (natsjetstream.JetStream, error) {
+	if domain := strings.TrimSpace(cfg.Domain); domain != "" {
+		return natsjetstream.NewWithDomain(conn, domain)
+	}
+	return natsjetstream.New(conn)
 }
 
 func NormalizeCompression(value string) (string, error) {

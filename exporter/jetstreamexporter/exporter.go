@@ -285,7 +285,7 @@ func msgIDHeaderValue(subject string, payload []byte) string {
 }
 
 func (e *jetstreamExporter) connect() (jetstream.JetStream, error) {
-	return sharedjetstream.Connect(e.cfg.URL, e.cfg.TLS, e.cfg.Auth, e.logger)
+	return sharedjetstream.Connect(e.cfg.URL, e.cfg.TLS, e.cfg.Auth, e.cfg.Connection, e.logger)
 }
 
 func contentTypeHeaderValue(value string) string {

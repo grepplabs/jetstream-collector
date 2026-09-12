@@ -78,8 +78,17 @@ func TestNormalizeStreamEnums(t *testing.T) {
 
 func TestBuildStreamConfigAppliesOptionalFields(t *testing.T) {
 	cfg, err := buildStreamConfig(configoptional.Some(BootstrapStreamConfig{
-		Name:                   "otel_logs",
-		Subjects:               []string{"otel.logs"},
+		Name:     "otel_logs",
+		Subjects: []string{"otel.logs"},
+		Sources: []BootstrapStreamSourceConfig{
+			{
+				Name:   "LOGS_ROUTED",
+				Domain: "CORE",
+				SubjectTransforms: []BootstrapSubjectTransformConfig{
+					{Source: "edge.edge_01.tenant.*.logs", Destination: "logs.tenant.{{wildcard(1)}}"},
+				},
+			},
+		},
 		Description:            "demo",
 		Retention:              "interest",
 		MaxConsumers:           7,
@@ -109,6 +118,12 @@ func TestBuildStreamConfigAppliesOptionalFields(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "otel_logs", cfg.Name)
 	require.Equal(t, []string{"otel.logs"}, cfg.Subjects)
+	require.Len(t, cfg.Sources, 1)
+	require.Equal(t, "LOGS_ROUTED", cfg.Sources[0].Name)
+	require.Equal(t, "CORE", cfg.Sources[0].Domain)
+	require.Equal(t, []natsjetstream.SubjectTransformConfig{
+		{Source: "edge.edge_01.tenant.*.logs", Destination: "logs.tenant.{{wildcard(1)}}"},
+	}, cfg.Sources[0].SubjectTransforms)
 	require.Equal(t, "demo", cfg.Description)
 	require.Equal(t, natsjetstream.InterestPolicy, cfg.Retention)
 	require.Equal(t, 7, cfg.MaxConsumers)

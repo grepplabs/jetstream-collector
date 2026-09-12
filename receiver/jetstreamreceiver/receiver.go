@@ -292,7 +292,7 @@ func (r *jetstreamReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *jetstreamReceiver) connect() (jetstream.JetStream, error) {
-	return sharedjetstream.Connect(r.cfg.URL, r.cfg.TLS, r.cfg.Auth, r.logger)
+	return sharedjetstream.Connect(r.cfg.URL, r.cfg.TLS, r.cfg.Auth, r.cfg.Connection, r.logger)
 }
 
 func (r *jetstreamReceiver) parallelism() int {

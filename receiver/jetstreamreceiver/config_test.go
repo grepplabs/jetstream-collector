@@ -32,6 +32,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.Equal(t, sharedjetstream.BootstrapConfig{}, cfg.Bootstrap)
 	require.Equal(t, sharedjetstream.TLSConfig{}, cfg.TLS)
 	require.Equal(t, sharedjetstream.AuthConfig{}, cfg.Auth)
+	require.Equal(t, sharedjetstream.ConnectionConfig{}, cfg.Connection)
 }
 
 func TestConsumeRetryDelayForAttempt(t *testing.T) {
@@ -53,6 +54,9 @@ func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 		"metrics_buckets": map[string]any{
 			"consume_duration": []any{0.01, 0.1, 1.0},
 		},
+		"connection": map[string]any{
+			"domain": "HUB",
+		},
 	})
 
 	require.NoError(t, conf.Unmarshal(cfg))
@@ -62,6 +66,7 @@ func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 	require.Equal(t, sharedjetstream.BootstrapConfig{}, cfg.Bootstrap)
 	require.Equal(t, sharedjetstream.TLSConfig{}, cfg.TLS)
 	require.Equal(t, sharedjetstream.AuthConfig{}, cfg.Auth)
+	require.Equal(t, "HUB", cfg.Connection.Domain)
 }
 
 func TestConfigValidate(t *testing.T) {

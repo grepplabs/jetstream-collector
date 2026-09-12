@@ -64,7 +64,7 @@ func TestConsumeLogsAddsClientMetadataToContext(t *testing.T) {
 
 	ctx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
-			"existing": []string{"keep"},
+			"existing": {"keep"},
 		}),
 	})
 
@@ -100,8 +100,8 @@ func TestConsumeLogsFailsOnConflictingBatchValues(t *testing.T) {
 func TestAddClientMetadataOverwritesConfiguredKeys(t *testing.T) {
 	ctx := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
-			"service.name": []string{"old"},
-			"keep":         []string{"value"},
+			"service.name": {"old"},
+			"keep":         {"value"},
 		}),
 	})
 

@@ -22,6 +22,8 @@ receivers:
     consume_retry:
       strategy: constant
       initial_delay: 1s
+    connection:
+      domain: ""
     bootstrap:
       stream:
         name: otel_logs
@@ -55,6 +57,7 @@ receivers:
 - `include_subject`: When enabled, consume-side custom metrics add a `subject` attribute. Default: `false`.
 - `compression`: Default payload compression when `Content-Encoding` is missing. Supported values: `none`, `identity`, `gzip`. Default: `none`.
 - `consume_retry`: Optional retry policy. See the `consume_retry` section below.
+- `connection`: Optional NATS/JetStream connection settings. See the `connection` section below.
 - `bootstrap`: Optional JetStream bootstrap container. Set `bootstrap.stream` and `bootstrap.consumer` as needed.
 - `tls`: Optional TLS client config.
 - `auth`: Optional NATS auth config.
@@ -73,6 +76,10 @@ consume_retry:
 - `consume_retry.initial_delay`: Delay before the first retry. Default: `1s`. Ignored when the strategy is `none`.
 - `consume_retry.multiplier`: Exponential delay multiplier. Default: `2`. Used only by the `exponential` strategy.
 - `consume_retry.max_delay`: Maximum exponential retry delay. Default: `30s`. Used only by the `exponential` strategy.
+
+### `connection`
+
+- `connection.domain`: Optional JetStream domain. Set this when consuming through a leaf node or another topology that exposes JetStream under a named domain. Empty uses the server's default JetStream domain.
 
 ### `bootstrap`
 
