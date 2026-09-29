@@ -17,6 +17,8 @@ processors:
     path: ../../processor/kubemappingprocessor
   - gomod: github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor v0.0.0
     path: ../../processor/clientmetadataprocessor
+  - gomod: github.com/grepplabs/jetstream-collector/processor/clientmetadataselector v0.0.0
+    path: ../../processor/clientmetadataselector
   - gomod: github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor v0.0.0
     path: ../../processor/partitionbyattrsprocessor
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.159.0

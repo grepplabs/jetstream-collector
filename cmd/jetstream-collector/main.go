@@ -9,6 +9,7 @@ import (
 	"github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter"
 	"github.com/grepplabs/jetstream-collector/exporter/s3exporter"
 	"github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor"
+	"github.com/grepplabs/jetstream-collector/processor/clientmetadataselector"
 	"github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor"
 	"github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor"
 	"github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver"
@@ -58,14 +59,15 @@ func main() {
 					component.MustNewType("loadgen"):   loadgenreceiver.NewFactory(),
 				},
 				Processors: map[component.Type]processor.Factory{
-					component.MustNewType("attributes"):       attributesprocessor.NewFactory(),
-					component.MustNewType("batch"):            batchprocessor.NewFactory(),
-					component.MustNewType("filter"):           filterprocessor.NewFactory(),
-					component.MustNewType("memory_limiter"):   memorylimiterprocessor.NewFactory(),
-					component.MustNewType("partitionbyattrs"): partitionbyattrsprocessor.NewFactory(),
-					component.MustNewType("clientmetadata"):   clientmetadataprocessor.NewFactory(),
-					component.MustNewType("kubemapping"):      kubemappingprocessor.NewFactory(),
-					component.MustNewType("transform"):        transformprocessor.NewFactory(),
+					component.MustNewType("attributes"):             attributesprocessor.NewFactory(),
+					component.MustNewType("batch"):                  batchprocessor.NewFactory(),
+					component.MustNewType("filter"):                 filterprocessor.NewFactory(),
+					component.MustNewType("memory_limiter"):         memorylimiterprocessor.NewFactory(),
+					component.MustNewType("partitionbyattrs"):       partitionbyattrsprocessor.NewFactory(),
+					component.MustNewType("clientmetadata"):         clientmetadataprocessor.NewFactory(),
+					component.MustNewType("clientmetadataselector"): clientmetadataselector.NewFactory(),
+					component.MustNewType("kubemapping"):            kubemappingprocessor.NewFactory(),
+					component.MustNewType("transform"):              transformprocessor.NewFactory(),
 				},
 				Exporters: map[component.Type]exporter.Factory{
 					component.MustNewType("jetstream"): jetstreamexporter.NewFactory(), // owned

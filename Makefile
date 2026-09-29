@@ -13,7 +13,7 @@ LOCAL_KUBECONFIG = $(ROOT_DIR)/kubeconfig-$(LOCAL_CLUSTER_NAME)
 
 include ./Makefile.Common
 
-ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./processor/clientmetadataprocessor ./processor/partitionbyattrsprocessor ./receiver/jetstreamreceiver
+ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./receiver/jetstreamreceiver
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
