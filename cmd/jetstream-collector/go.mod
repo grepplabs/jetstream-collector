@@ -7,6 +7,7 @@ require (
 	github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
 	github.com/grepplabs/jetstream-collector/exporter/s3exporter v0.0.0
 	github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor v0.0.0
+	github.com/grepplabs/jetstream-collector/processor/clientmetadataselector v0.0.0
 	github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor v0.0.0
 	github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor v0.0.0
 	github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver v0.0.0
@@ -19,6 +20,7 @@ replace (
 	github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jetstream
 	github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 	github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor => ../../processor/clientmetadataprocessor
+	github.com/grepplabs/jetstream-collector/processor/clientmetadataselector => ../../processor/clientmetadataselector
 	github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor => ../../processor/kubemappingprocessor
 	github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor => ../../processor/partitionbyattrsprocessor
 	github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver => ../../receiver/jetstreamreceiver

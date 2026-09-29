@@ -1,0 +1,14 @@
+type: clientmetadataselector
+scope_name: github.com/grepplabs/jetstream-collector/processor/clientmetadataselector
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: processor
+  stability:
+    alpha: [logs, metrics, traces, profiles]
+
+tests:
+  config:
+    metadata_key: shard
+    values: ["0", "1"]
+    strategy: round_robin

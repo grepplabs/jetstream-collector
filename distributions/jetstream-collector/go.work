@@ -8,6 +8,7 @@ use (
 	../../exporter/jetstreamexporter
 	../../exporter/s3exporter
 	../../processor/partitionbyattrsprocessor
+	../../processor/clientmetadataselector
 	../../processor/kubemappingprocessor
 	../../receiver/jetstreamreceiver
 )
