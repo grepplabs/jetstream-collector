@@ -51,7 +51,8 @@ func (r *jetstreamReceiver) processBatchOnce(ctx context.Context, consumer jetst
 		msgs = append(msgs, msg)
 	}
 
-	if batchErr := batch.Error(); batchErr != nil && ctx.Err() == nil {
+	if batchErr := batch.Error(); batchErr != nil && ctx.Err() == nil &&
+		!(errors.Is(batchErr, context.DeadlineExceeded) && errors.Is(fetchCtx.Err(), context.DeadlineExceeded)) {
 		r.logger.Error("jetstream batch error", zap.Error(batchErr))
 	}
 	if len(msgs) == 0 {
