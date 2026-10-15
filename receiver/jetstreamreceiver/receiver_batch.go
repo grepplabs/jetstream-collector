@@ -51,8 +51,7 @@ func (r *jetstreamReceiver) processBatchOnce(ctx context.Context, consumer jetst
 		msgs = append(msgs, msg)
 	}
 
-	if batchErr := batch.Error(); batchErr != nil && ctx.Err() == nil &&
-		!(errors.Is(batchErr, context.DeadlineExceeded) && errors.Is(fetchCtx.Err(), context.DeadlineExceeded)) {
+	if batchErr := batch.Error(); shouldLogBatchError(batchErr, ctx.Err(), fetchCtx.Err()) {
 		r.logger.Error("jetstream batch error", zap.Error(batchErr))
 	}
 	if len(msgs) == 0 {
@@ -80,6 +79,13 @@ func (r *jetstreamReceiver) processBatchOnce(ctx context.Context, consumer jetst
 	}
 
 	return nil
+}
+
+func shouldLogBatchError(batchErr, receiverErr, fetchErr error) bool {
+	if batchErr == nil || receiverErr != nil {
+		return false
+	}
+	return !(errors.Is(batchErr, context.DeadlineExceeded) && errors.Is(fetchErr, context.DeadlineExceeded))
 }
 
 func (r *jetstreamReceiver) handleMessages(ctx context.Context, msgs []jetstream.Msg, groupBySubject bool) error {

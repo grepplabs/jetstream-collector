@@ -2,6 +2,7 @@ package jetstreamreceiver
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	sharedjetstream "github.com/grepplabs/jetstream-collector/pkg/jetstream"
@@ -10,6 +11,45 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.uber.org/zap"
 )
+
+func TestShouldLogBatchError(t *testing.T) {
+	tests := []struct {
+		name        string
+		batchErr    error
+		receiverErr error
+		fetchErr    error
+		want        bool
+	}{
+		{
+			name:     "fetch wait timeout is expected",
+			batchErr: context.DeadlineExceeded,
+			fetchErr: context.DeadlineExceeded,
+			want:     false,
+		},
+		{
+			name:     "other batch error is logged",
+			batchErr: errors.New("jetstream unavailable"),
+			want:     true,
+		},
+		{
+			name:        "receiver shutdown error is ignored",
+			batchErr:    errors.New("fetch stopped"),
+			receiverErr: context.Canceled,
+			want:        false,
+		},
+		{
+			name:     "deadline without fetch timeout is logged",
+			batchErr: context.DeadlineExceeded,
+			want:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, shouldLogBatchError(tt.batchErr, tt.receiverErr, tt.fetchErr))
+		})
+	}
+}
 
 func TestHandleMessagesProcessesBatch(t *testing.T) {
 	called := false
