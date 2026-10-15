@@ -1,12 +1,11 @@
 module github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor
 
-go 1.26.7
-
-require github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
+go 1.27.2
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 
 require (
+	github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.65.0
 	go.opentelemetry.io/collector/component v1.65.0

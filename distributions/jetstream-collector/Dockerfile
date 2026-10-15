@@ -2,7 +2,7 @@ FROM alpine:3.24 AS certs
 RUN apk --update add ca-certificates
 
 
-FROM --platform=$BUILDPLATFORM golang:1.26.7 AS build-stage
+FROM --platform=$BUILDPLATFORM golang:1.27.2 AS build-stage
 
 ARG TARGETOS
 ARG TARGETARCH

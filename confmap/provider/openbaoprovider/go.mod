@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider
 
-go 1.26.7
+go 1.27.2
 
 require (
 	github.com/openbao/openbao/api/v2 v2.6.0

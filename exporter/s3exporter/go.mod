@@ -1,14 +1,13 @@
 module github.com/grepplabs/jetstream-collector/exporter/s3exporter
 
-go 1.26.7
-
-require github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
+go 1.27.2
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.1
 	github.com/google/uuid v1.6.0
+	github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
 	github.com/itchyny/timefmt-go v0.1.8
 	github.com/minio/minio-go/v7 v7.2.0
 	github.com/stretchr/testify v1.11.1

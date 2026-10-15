@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor
 
-go 1.26.7
+go 1.27.2
 
 require (
 	github.com/stretchr/testify v1.11.1

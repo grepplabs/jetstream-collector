@@ -1,13 +1,14 @@
 module github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter
 
-go 1.26.7
-
-require github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
+go 1.27.2
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 
+replace github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jetstream
+
 require (
 	github.com/grepplabs/jetstream-collector/pkg/jetstream v0.0.0
+	github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
 	github.com/nats-io/nats.go v1.53.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.65.0
@@ -25,16 +26,11 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.159.0
 	go.opentelemetry.io/collector/pdata v1.65.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.159.0
-	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.28.0
-)
-
-replace github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jetstream
-
-require (
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
 	go.opentelemetry.io/otel/sdk/metric v1.45.0
+	go.uber.org/goleak v1.3.0
+	go.uber.org/zap v1.28.0
 )
 
 require (
