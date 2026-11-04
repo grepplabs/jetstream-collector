@@ -22,4 +22,4 @@ Each expression must return a string. Expressions are compiled when the processo
 
 `on_error` controls CEL evaluation failures. `drop` (default) skips the item; `reject` returns a permanent error. Missing map keys are evaluation errors. If a signal has no configured expressions, its items share one partition.
 
-The expression activation exposes `record`, `datapoint`, or `span`, each with an `attributes` map of item attributes and a `resource.attributes` map of resource attributes. For example, a metric key may use `datapoint.resource.attributes['service.name']`.
+The expression activation exposes `record`, `datapoint`, or `span`, each with an `attributes` map of item attributes and a `resource.attributes` map of resource attributes. CEL map indexing works, and the `get_attr('key')` helper is also available on attribute maps, for example `datapoint.resource.attributes.get_attr('service.name')`. Missing keys produce evaluation errors and follow `on_error`.

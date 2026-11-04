@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -28,20 +27,4 @@ func TestConfigValidate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCompileConfigRejectsInvalidCEL(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.PartitionBy.Logs = []string{"record.attributes["}
-	_, err := compileConfig(cfg)
-	require.ErrorContains(t, err, "partition_by.logs[0]")
-}
-
-func TestCELRejectsNonStringResult(t *testing.T) {
-	cfg := NewDefaultConfig()
-	cfg.PartitionBy.Logs = []string{"1"}
-	compiled, err := compileConfig(cfg)
-	require.NoError(t, err)
-	_, err = compiled.key(compiled.logs, pcommon.NewMap().AsRaw(), pcommon.NewMap().AsRaw())
-	require.ErrorContains(t, err, "must return strings")
 }

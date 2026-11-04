@@ -6,6 +6,8 @@ import (
 
 	"cel.dev/cel-go/cel"
 	"cel.dev/cel-go/common/types"
+	"cel.dev/cel-go/common/types/ref"
+	"cel.dev/cel-go/common/types/traits"
 )
 
 type compiledExpression struct {
@@ -29,7 +31,15 @@ func compileExpressions(cfg *Config) (*compiledConfig, error) {
 		{"metrics", "datapoint", cfg.PartitionBy.Metrics, &out.metrics},
 		{"traces", "span", cfg.PartitionBy.Traces, &out.traces},
 	} {
-		env, err := cel.NewEnv(cel.Variable(spec.variable, cel.DynType))
+		env, err := cel.NewEnv(
+			cel.Variable(spec.variable, cel.DynType),
+			cel.Function("get_attr", cel.MemberOverload(
+				"map_get_attr_string",
+				[]*cel.Type{cel.MapType(cel.StringType, cel.DynType), cel.StringType},
+				cel.DynType,
+				cel.BinaryBinding(getAttr),
+			)),
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -46,6 +56,22 @@ func compileExpressions(cfg *Config) (*compiledConfig, error) {
 		}
 	}
 	return out, nil
+}
+
+func getAttr(mapValue, keyValue ref.Val) ref.Val {
+	mapper, ok := mapValue.(traits.Mapper)
+	if !ok {
+		return types.NewErr("get_attr receiver must be a map, got %s", mapValue.Type())
+	}
+	key, ok := keyValue.(types.String)
+	if !ok {
+		return types.NewErr("get_attr key must be a string, got %s", keyValue.Type())
+	}
+	value, found := mapper.Find(key)
+	if !found {
+		return types.NewErr("missing attribute %q", string(key))
+	}
+	return value
 }
 
 func (c *compiledConfig) key(expressions []compiledExpression, attrs, resourceAttrs map[string]any) (string, error) {
