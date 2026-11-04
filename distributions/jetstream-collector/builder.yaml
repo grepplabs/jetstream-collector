@@ -21,6 +21,8 @@ processors:
     path: ../../processor/clientmetadataselector
   - gomod: github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor v0.0.0
     path: ../../processor/partitionbyattrsprocessor
+  - gomod: github.com/grepplabs/jetstream-collector/processor/celpartitionprocessor v0.0.0
+    path: ../../processor/celpartitionprocessor
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.159.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.159.0

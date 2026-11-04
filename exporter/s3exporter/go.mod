@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/exporter/s3exporter
 
-go 1.27.2
+go 1.27.3
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 

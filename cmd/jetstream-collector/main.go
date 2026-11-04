@@ -8,6 +8,7 @@ import (
 	"github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider"
 	"github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter"
 	"github.com/grepplabs/jetstream-collector/exporter/s3exporter"
+	"github.com/grepplabs/jetstream-collector/processor/celpartitionprocessor"
 	"github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor"
 	"github.com/grepplabs/jetstream-collector/processor/clientmetadataselector"
 	"github.com/grepplabs/jetstream-collector/processor/kubemappingprocessor"
@@ -66,6 +67,7 @@ func main() {
 					component.MustNewType("partitionbyattrs"):       partitionbyattrsprocessor.NewFactory(),
 					component.MustNewType("clientmetadata"):         clientmetadataprocessor.NewFactory(),
 					component.MustNewType("clientmetadataselector"): clientmetadataselector.NewFactory(),
+					component.MustNewType("celpartition"):           celpartitionprocessor.NewFactory(),
 					component.MustNewType("kubemapping"):            kubemappingprocessor.NewFactory(),
 					component.MustNewType("transform"):              transformprocessor.NewFactory(),
 				},
