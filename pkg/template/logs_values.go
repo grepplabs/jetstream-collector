@@ -14,16 +14,16 @@ type Source interface {
 	TelemetryValues(context.Context, string) ([]string, error)
 }
 
-type LogValues struct {
+type LogsValues struct {
 	Logs plog.Logs
 }
 
-func (v LogValues) HeaderValues(ctx context.Context, key string) ([]string, error) {
+func (v LogsValues) HeaderValues(ctx context.Context, key string) ([]string, error) {
 	info := client.FromContext(ctx)
 	return info.Metadata.Get(key), nil
 }
 
-func (v LogValues) ResourceValues(_ context.Context, key string) ([]string, error) {
+func (v LogsValues) ResourceValues(_ context.Context, key string) ([]string, error) {
 	values := make([]string, 0)
 	for i := 0; i < v.Logs.ResourceLogs().Len(); i++ {
 		attrs := v.Logs.ResourceLogs().At(i).Resource().Attributes()
@@ -37,7 +37,7 @@ func (v LogValues) ResourceValues(_ context.Context, key string) ([]string, erro
 	return values, nil
 }
 
-func (v LogValues) TelemetryValues(_ context.Context, key string) ([]string, error) {
+func (v LogsValues) TelemetryValues(_ context.Context, key string) ([]string, error) {
 	values := make([]string, 0)
 	for i := 0; i < v.Logs.ResourceLogs().Len(); i++ {
 		rl := v.Logs.ResourceLogs().At(i)

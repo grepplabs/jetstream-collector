@@ -58,7 +58,7 @@ func (p *clientMetadataProcessor) resolveClientMetadata(ctx context.Context, ld 
 		return nil, nil
 	}
 
-	resolver := &logsClientMetadataResolver{LogValues: tmpl.LogValues{Logs: ld}}
+	resolver := &logsClientMetadataResolver{LogsValues: tmpl.LogsValues{Logs: ld}}
 	entries := make(map[string]string, len(p.specs))
 
 	for _, spec := range p.specs {
@@ -92,7 +92,7 @@ func resolveClientMetadataValue(ctx context.Context, spec clientMetadataSpec, so
 }
 
 type logsClientMetadataResolver struct {
-	tmpl.LogValues
+	tmpl.LogsValues
 }
 
 func addClientMetadata(ctx context.Context, entries map[string]string) context.Context {
