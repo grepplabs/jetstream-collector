@@ -70,10 +70,9 @@ Rules:
 
 - `header:<key>` reads from `client.FromContext(ctx).Metadata`.
 - `resource:<key>` reads from resource attributes.
-- `telemetry:<key>` reads from the lowest exported item attributes.
-- Logs support `header`, `resource`, and `telemetry`.
-- Metrics, traces, and profiles currently support `header` only.
-- If a `resource` or `telemetry` placeholder resolves to different values inside one exported log batch, the export fails instead of guessing.
+- `telemetry:<key>` reads from the lowest exported item attributes: log record attributes, metric datapoint attributes, or span attributes.
+- Logs, metrics, and traces support `header`, `resource`, and `telemetry`; profiles support `header` only.
+- If a `resource` or `telemetry` placeholder resolves to different values inside one exported batch, the export fails instead of guessing. A CEL partition processor can group items by the subject attributes so each batch resolves to one value.
 
 
 ### `retry_on_failure`

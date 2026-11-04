@@ -7,6 +7,8 @@ import (
 	tmpl "github.com/grepplabs/jetstream-collector/pkg/template"
 	client "go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/stretchr/testify/require"
 )
@@ -283,7 +285,7 @@ func TestLogsSubjectSource(t *testing.T) {
 		},
 	}
 
-	src := &logsSubjectResolver{LogValues: tmpl.LogValues{Logs: logs}}
+	src := &logsSubjectResolver{LogsValues: tmpl.LogsValues{Logs: logs}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.call(src)
@@ -295,7 +297,15 @@ func TestLogsSubjectSource(t *testing.T) {
 
 func TestMetricsSubjectSource(t *testing.T) {
 	ctx := newTestSubjectContext()
-	src := &metricsSubjectResolver{}
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "orders")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	points := metric.SetEmptyGauge().DataPoints()
+	points.AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+	points.AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+	src := &metricsSubjectResolver{MetricsValues: tmpl.MetricsValues{Metrics: md}}
 
 	tests := []struct {
 		name    string
@@ -309,14 +319,14 @@ func TestMetricsSubjectSource(t *testing.T) {
 			want: []string{"tenant-a", "tenant-b"},
 		},
 		{
-			name:    "resource unsupported",
-			call:    func(s SubjectSource) ([]string, error) { return s.ResourceValues(ctx, "service.name") },
-			wantErr: "not supported for metrics",
+			name: "resource values",
+			call: func(s SubjectSource) ([]string, error) { return s.ResourceValues(ctx, "service.name") },
+			want: []string{"orders"},
 		},
 		{
-			name:    "telemetry unsupported",
-			call:    func(s SubjectSource) ([]string, error) { return s.TelemetryValues(ctx, "tenant") },
-			wantErr: "not supported for metrics",
+			name: "telemetry values",
+			call: func(s SubjectSource) ([]string, error) { return s.TelemetryValues(ctx, "tenant") },
+			want: []string{"tenant-a", "tenant-a"},
 		},
 	}
 
@@ -337,7 +347,13 @@ func TestMetricsSubjectSource(t *testing.T) {
 
 func TestTracesSubjectSource(t *testing.T) {
 	ctx := newTestSubjectContext()
-	src := &tracesSubjectResolver{}
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "orders")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+	ss.Spans().AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+	src := &tracesSubjectResolver{TracesValues: tmpl.TracesValues{Traces: td}}
 
 	tests := []struct {
 		name    string
@@ -351,14 +367,14 @@ func TestTracesSubjectSource(t *testing.T) {
 			want: []string{"tenant-a", "tenant-b"},
 		},
 		{
-			name:    "resource unsupported",
-			call:    func(s SubjectSource) ([]string, error) { return s.ResourceValues(ctx, "service.name") },
-			wantErr: "not supported for traces",
+			name: "resource values",
+			call: func(s SubjectSource) ([]string, error) { return s.ResourceValues(ctx, "service.name") },
+			want: []string{"orders"},
 		},
 		{
-			name:    "telemetry unsupported",
-			call:    func(s SubjectSource) ([]string, error) { return s.TelemetryValues(ctx, "tenant") },
-			wantErr: "not supported for traces",
+			name: "telemetry values",
+			call: func(s SubjectSource) ([]string, error) { return s.TelemetryValues(ctx, "tenant") },
+			want: []string{"tenant-a", "tenant-a"},
 		},
 	}
 

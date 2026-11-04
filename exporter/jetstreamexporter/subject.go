@@ -96,16 +96,16 @@ type subjectResolver interface {
 }
 
 type logsSubjectResolver struct {
-	tmpl.LogValues
+	tmpl.LogsValues
 	subject  string
 	template *subjectTemplate
 }
 
 func NewLogsSubjectResolver(logs plog.Logs, subject string, template *subjectTemplate) SubjectResolver {
 	return &logsSubjectResolver{
-		LogValues: tmpl.LogValues{Logs: logs},
-		subject:   subject,
-		template:  template,
+		Logs:     logs,
+		subject:  subject,
+		template: template,
 	}
 }
 
@@ -118,12 +118,14 @@ func (r *logsSubjectResolver) ResolvePart(ctx context.Context, part tmpl.Part) (
 }
 
 type metricsSubjectResolver struct {
+	tmpl.MetricsValues
 	subject  string
 	template *subjectTemplate
 }
 
-func NewMetricsSubjectResolver(_ pmetric.Metrics, subject string, template *subjectTemplate) SubjectResolver {
+func NewMetricsSubjectResolver(metrics pmetric.Metrics, subject string, template *subjectTemplate) SubjectResolver {
 	return &metricsSubjectResolver{
+		Metrics:  metrics,
 		subject:  subject,
 		template: template,
 	}
@@ -137,26 +139,15 @@ func (r *metricsSubjectResolver) ResolvePart(ctx context.Context, part tmpl.Part
 	return resolveSubjectPart(ctx, part, r)
 }
 
-func (r *metricsSubjectResolver) HeaderValues(ctx context.Context, key string) ([]string, error) {
-	info := client.FromContext(ctx)
-	return info.Metadata.Get(key), nil
-}
-
-func (r *metricsSubjectResolver) ResourceValues(ctx context.Context, key string) ([]string, error) {
-	return nil, fmt.Errorf("subject source %q is not supported for metrics", subjectSourceResource)
-}
-
-func (r *metricsSubjectResolver) TelemetryValues(ctx context.Context, key string) ([]string, error) {
-	return nil, fmt.Errorf("subject source %q is not supported for metrics", subjectSourceTelemetry)
-}
-
 type tracesSubjectResolver struct {
+	tmpl.TracesValues
 	subject  string
 	template *subjectTemplate
 }
 
-func NewTracesSubjectResolver(_ ptrace.Traces, subject string, template *subjectTemplate) SubjectResolver {
+func NewTracesSubjectResolver(traces ptrace.Traces, subject string, template *subjectTemplate) SubjectResolver {
 	return &tracesSubjectResolver{
+		Traces:   traces,
 		subject:  subject,
 		template: template,
 	}
@@ -168,19 +159,6 @@ func (r *tracesSubjectResolver) Resolve(ctx context.Context) (string, error) {
 
 func (r *tracesSubjectResolver) ResolvePart(ctx context.Context, part tmpl.Part) (string, error) {
 	return resolveSubjectPart(ctx, part, r)
-}
-
-func (r *tracesSubjectResolver) HeaderValues(ctx context.Context, key string) ([]string, error) {
-	info := client.FromContext(ctx)
-	return info.Metadata.Get(key), nil
-}
-
-func (r *tracesSubjectResolver) ResourceValues(ctx context.Context, key string) ([]string, error) {
-	return nil, fmt.Errorf("subject source %q is not supported for traces", subjectSourceResource)
-}
-
-func (r *tracesSubjectResolver) TelemetryValues(ctx context.Context, key string) ([]string, error) {
-	return nil, fmt.Errorf("subject source %q is not supported for traces", subjectSourceTelemetry)
 }
 
 type profilesSubjectResolver struct {

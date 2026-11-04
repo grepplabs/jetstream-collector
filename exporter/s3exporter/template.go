@@ -87,13 +87,13 @@ type KeySource interface {
 }
 
 type logsKeyPrefixResolver struct {
-	tmpl.LogValues
+	tmpl.LogsValues
 	template   *keyPrefixTemplate
 	resolvedAt time.Time
 }
 
 func newLogsKeyPrefixResolver(logs plog.Logs, template *keyPrefixTemplate, resolvedAt time.Time) KeyPrefixResolver {
-	return &logsKeyPrefixResolver{LogValues: tmpl.LogValues{Logs: logs}, template: template, resolvedAt: resolvedAt}
+	return &logsKeyPrefixResolver{Logs: logs, template: template, resolvedAt: resolvedAt}
 }
 
 func (r *logsKeyPrefixResolver) Resolve(ctx context.Context) (string, error) {
