@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/internal/tools
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/client9/misspell v0.3.4

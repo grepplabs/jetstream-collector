@@ -1,0 +1,8 @@
+type: celpartition
+scope_name: github.com/grepplabs/jetstream-collector/processor/celpartitionprocessor
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: processor
+  stability:
+    alpha: [logs, metrics, traces]

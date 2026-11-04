@@ -32,6 +32,7 @@ The repository is organized into these areas:
 | `clientmetadataselector` | Selects a configured value and stores it in client metadata for downstream routing. | [clientmetadataselector](processor/clientmetadataselector/README.md) |
 | `kubemapping` | Maps collector client metadata through Kubernetes resources and writes extracted values back to the client metadata context. | [kubemappingprocessor](processor/kubemappingprocessor/README.md) |
 | `partitionbyattrs` | Splits incoming batches into multiple downstream batches based on configured resource and telemetry attributes. | [partitionbyattrsprocessor](processor/partitionbyattrsprocessor/README.md) |
+| `celpartition` | Partitions logs, metric data points, and spans using CEL key expressions. | [celpartitionprocessor](processor/celpartitionprocessor/README.md) |
 
 ### Confmap Providers
 
