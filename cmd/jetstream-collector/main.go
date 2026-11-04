@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/badgerextension"
+	"github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/pebbleextension"
 	"github.com/elastic/opentelemetry-collector-components/extension/awscredentialsproviderextension"
 	"github.com/elastic/opentelemetry-collector-components/receiver/loadgenreceiver"
 	"github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider"
@@ -83,10 +85,12 @@ func main() {
 					component.MustNewType("routing"): routingconnector.NewFactory(),
 				},
 				Extensions: map[component.Type]extension.Factory{
+					component.MustNewType("badger"):                 badgerextension.NewFactory(),
 					component.MustNewType("basicauth"):              basicauthextension.NewFactory(),
 					component.MustNewType("bearertokenauth"):        bearertokenauthextension.NewFactory(),
 					component.MustNewType("opamp"):                  opampextension.NewFactory(),
 					component.MustNewType("oidcauth"):               oidcauthextension.NewFactory(),
+					component.MustNewType("pebble"):                 pebbleextension.NewFactory(),
 					component.MustNewType("memory_limiter"):         memorylimiterextension.NewFactory(),
 					component.MustNewType("pprof"):                  pprofextension.NewFactory(),
 					component.MustNewType("file_storage"):           filestorage.NewFactory(),

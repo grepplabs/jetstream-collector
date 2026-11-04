@@ -56,6 +56,8 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.70.0
 
 extensions:
+  - gomod: github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/badgerextension v1.3.0
+  - gomod: github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/pebbleextension v1.3.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.164.1
