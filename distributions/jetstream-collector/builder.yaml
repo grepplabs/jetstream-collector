@@ -33,6 +33,7 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.164.1
 
 exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.164.1
   - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
     path: ../../exporter/jetstreamexporter
   - gomod: github.com/grepplabs/jetstream-collector/exporter/s3exporter v0.0.0
