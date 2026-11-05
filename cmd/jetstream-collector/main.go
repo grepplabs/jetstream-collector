@@ -17,8 +17,10 @@ import (
 	"github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor"
 	"github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
@@ -74,12 +76,13 @@ func main() {
 					component.MustNewType("transform"):              transformprocessor.NewFactory(),
 				},
 				Exporters: map[component.Type]exporter.Factory{
-					component.MustNewType("jetstream"): jetstreamexporter.NewFactory(), // owned
-					component.MustNewType("s3"):        s3exporter.NewFactory(),
-					component.MustNewType("debug"):     debugexporter.NewFactory(),
-					component.MustNewType("otlp"):      otlpexporter.NewFactory(),
-					component.MustNewType("otlphttp"):  otlphttpexporter.NewFactory(),
-					component.MustNewType("nop"):       nopexporter.NewFactory(),
+					component.MustNewType("jetstream"):     jetstreamexporter.NewFactory(), // owned
+					component.MustNewType("loadbalancing"): loadbalancingexporter.NewFactory(),
+					component.MustNewType("s3"):            s3exporter.NewFactory(),
+					component.MustNewType("debug"):         debugexporter.NewFactory(),
+					component.MustNewType("otlp"):          otlpexporter.NewFactory(),
+					component.MustNewType("otlphttp"):      otlphttpexporter.NewFactory(),
+					component.MustNewType("nop"):           nopexporter.NewFactory(),
 				},
 				Connectors: map[component.Type]connector.Factory{
 					component.MustNewType("routing"): routingconnector.NewFactory(),
@@ -88,6 +91,7 @@ func main() {
 					component.MustNewType("badger"):                 badgerextension.NewFactory(),
 					component.MustNewType("basicauth"):              basicauthextension.NewFactory(),
 					component.MustNewType("bearertokenauth"):        bearertokenauthextension.NewFactory(),
+					component.MustNewType("health_check"):           healthcheckextension.NewFactory(),
 					component.MustNewType("opamp"):                  opampextension.NewFactory(),
 					component.MustNewType("oidcauth"):               oidcauthextension.NewFactory(),
 					component.MustNewType("pebble"):                 pebbleextension.NewFactory(),

@@ -33,6 +33,7 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.164.1
 
 exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.164.1
   - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
     path: ../../exporter/jetstreamexporter
   - gomod: github.com/grepplabs/jetstream-collector/exporter/s3exporter v0.0.0
@@ -60,6 +61,7 @@ extensions:
   - gomod: github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/pebbleextension v1.3.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.164.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.164.1
