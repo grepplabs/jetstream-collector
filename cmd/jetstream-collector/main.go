@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
@@ -90,6 +91,7 @@ func main() {
 					component.MustNewType("badger"):                 badgerextension.NewFactory(),
 					component.MustNewType("basicauth"):              basicauthextension.NewFactory(),
 					component.MustNewType("bearertokenauth"):        bearertokenauthextension.NewFactory(),
+					component.MustNewType("health_check"):           healthcheckextension.NewFactory(),
 					component.MustNewType("opamp"):                  opampextension.NewFactory(),
 					component.MustNewType("oidcauth"):               oidcauthextension.NewFactory(),
 					component.MustNewType("pebble"):                 pebbleextension.NewFactory(),

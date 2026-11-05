@@ -336,6 +336,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthext
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.164.1/go.mod h1:QVpaXkRJfeKvQQh2vuzV6wGtWuQAFhiD72arOJGnloc=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.164.1 h1:tl/jO6JZ17BULLD8ZhAcLzNLoAJJh4zGLv4dngS1dj0=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.164.1/go.mod h1:1KdL0D7PPTQOEoYNWlNOYcIbNAED7Fcb/p1Y2YLK5rs=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.164.1 h1:IxoXNn+0RNE7sV+QrBBaY1Jx7CwF7kvJPEB7Y0pq1j4=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.164.1/go.mod h1:uLYjsB0OasTaMYw610yO53lRM6kevsn21jEFp2kmSJY=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.164.1 h1:NbeQTOwldwhvtqtscv+kR7Ev4khxQTBdxZfV9xXFKqA=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.164.1/go.mod h1:DLKFsHg3esr4jz0HKg3GS0buUi/k5EzxpMDN9K79MW4=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.164.1 h1:vpduXxTsc+W2DKl67bbKHy9C35F5/lyw3dbp4+pf36s=
@@ -360,6 +362,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.164.1/go.mod h1:BWGqs98cnvOIxAMstzjYS/i9IqHruKwX3dVaf5dctLw=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.1 h1:9xzaUs2lUMLCaWwORDD02JWzNSKdTSqrI16SuiCrs7M=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.1/go.mod h1:gv4pLPEnDZ+mikFr3KbNYNWlBTk1zwtqC9rtoseaYUY=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck v0.164.1 h1:Yoezy7i8ZQgz7TFP/wL42xTydVk93jQcyk5REQ4OgR0=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck v0.164.1/go.mod h1:JJ/zhtLD2ttNupLJ527xQpAjvb7TsTD+vCS+YCcWRto=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.164.1 h1:WTe9j6mojh00vOK9bfEanjSVXhv//YEBncqsJQEP03g=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.164.1/go.mod h1:U3Klg0PMYUixOuAuZmhSd5uSSheYCx7wpr2TQK0S344=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.164.1 h1:ZnV+ybXoTX+jPWDl9+X/qhZJPmYHkiIo5Itlg4NWWL8=
