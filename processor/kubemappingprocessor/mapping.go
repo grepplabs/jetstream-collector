@@ -50,7 +50,9 @@ func executeResolvedMapping(ctx context.Context, lookup ResourceLookup, mapping 
 			return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("value from source %s for selector %q was not found", mapping.Resource.GVK(), selectors.String()))
 		}
 		obj := objects[0]
-		return value, true, objectIdentity{GVK: obj.GroupVersionKind(), Namespace: obj.GetNamespace(), Name: obj.GetName()}, nil
+		// List responses may omit type metadata on individual unstructured items.
+		// Use the requested GVK so cache entries match informer event identities.
+		return value, true, objectIdentity{GVK: mapping.Resource.GVK(), Namespace: obj.GetNamespace(), Name: obj.GetName()}, nil
 	default:
 		return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("source %s selector %q matched %d objects", mapping.Resource.GVK(), selectors.String(), len(objects)))
 	}
