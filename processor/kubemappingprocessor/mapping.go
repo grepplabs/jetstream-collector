@@ -10,9 +10,14 @@ import (
 )
 
 func executeMapping(ctx context.Context, lookup ResourceLookup, mapping MappingConfig, md client.Metadata) (string, bool, error) {
+	value, found, _, err := executeMappingWithIdentity(ctx, lookup, mapping, md)
+	return value, found, err
+}
+
+func executeMappingWithIdentity(ctx context.Context, lookup ResourceLookup, mapping MappingConfig, md client.Metadata) (string, bool, objectIdentity, error) {
 	selectors, err := resolveSelectors(ctx, mapping.Selector, md)
 	if err != nil {
-		return "", false, err
+		return "", false, objectIdentity{}, err
 	}
 	return executeResolvedMapping(ctx, lookup, mapping, selectors)
 }
@@ -28,24 +33,27 @@ func resolveSelectors(ctx context.Context, cfg SelectorConfig, md client.Metadat
 	return selectors, nil
 }
 
-func executeResolvedMapping(ctx context.Context, lookup ResourceLookup, mapping MappingConfig, selectors selectors) (string, bool, error) {
+func executeResolvedMapping(ctx context.Context, lookup ResourceLookup, mapping MappingConfig, selectors selectors) (string, bool, objectIdentity, error) {
 	objects, err := lookup.List(ctx, mapping.Resource, selectors)
 	if err != nil {
-		return "", false, fmt.Errorf("source %s selector %q: %w", mapping.Resource.GVK(), selectors.String(), err)
+		return "", false, objectIdentity{}, fmt.Errorf("source %s selector %q: %w", mapping.Resource.GVK(), selectors.String(), err)
 	}
 	switch len(objects) {
 	case 0:
-		return "", false, consumererror.NewPermanent(fmt.Errorf("source %s selector %q matched no objects", mapping.Resource.GVK(), selectors.String()))
+		return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("source %s selector %q matched no objects", mapping.Resource.GVK(), selectors.String()))
 	case 1:
 		value, found, err := extractValue(objects[0], mapping.Value)
 		if err != nil {
-			return "", false, consumererror.NewPermanent(fmt.Errorf("extract value from source %s for selector %q: %w", mapping.Resource.GVK(), selectors.String(), err))
+			return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("extract value from source %s for selector %q: %w", mapping.Resource.GVK(), selectors.String(), err))
 		}
 		if !found {
-			return "", false, consumererror.NewPermanent(fmt.Errorf("value from source %s for selector %q was not found", mapping.Resource.GVK(), selectors.String()))
+			return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("value from source %s for selector %q was not found", mapping.Resource.GVK(), selectors.String()))
 		}
-		return value, true, nil
+		obj := objects[0]
+		// List responses may omit type metadata on individual unstructured items.
+		// Use the requested GVK so cache entries match informer event identities.
+		return value, true, objectIdentity{GVK: mapping.Resource.GVK(), Namespace: obj.GetNamespace(), Name: obj.GetName()}, nil
 	default:
-		return "", false, consumererror.NewPermanent(fmt.Errorf("source %s selector %q matched %d objects", mapping.Resource.GVK(), selectors.String(), len(objects)))
+		return "", false, objectIdentity{}, consumererror.NewPermanent(fmt.Errorf("source %s selector %q matched %d objects", mapping.Resource.GVK(), selectors.String(), len(objects)))
 	}
 }

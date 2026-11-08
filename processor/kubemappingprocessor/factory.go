@@ -28,8 +28,25 @@ func createBase(settings processor.Settings, cfg component.Config) (*kubeMapping
 	if err != nil {
 		return nil, err
 	}
-	return &kubeMappingProcessor{cfg: config, lookup: lookup, mapper: newMapper(lookup, config.Cache), logger: settings.Logger}, nil
+	mapper := newMapper(lookup, config.Cache)
+	configureCacheInvalidation(lookup, mapper, config.Cache.InvalidateOnChange)
+	return &kubeMappingProcessor{cfg: config, lookup: lookup, mapper: mapper, logger: settings.Logger}, nil
 }
+
+func configureCacheInvalidation(lookup ResourceLookup, mapper mapper, enabled bool) {
+	if !enabled {
+		return
+	}
+	resourceLookup, ok := lookup.(*resourceLookup)
+	if !ok {
+		return
+	}
+	cached, ok := mapper.(*cachedMapper)
+	if ok {
+		resourceLookup.onObjectChange = cached.InvalidateObject
+	}
+}
+
 func createLogsProcessor(_ context.Context, s processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
 	p, err := createBase(s, cfg)
 	if err != nil {
