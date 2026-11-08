@@ -25,9 +25,10 @@ const (
 )
 
 type CacheConfig struct {
-	TTL         time.Duration `mapstructure:"ttl"`
-	Capacity    uint64        `mapstructure:"capacity"`
-	CacheMisses bool          `mapstructure:"cache_misses"`
+	TTL                time.Duration `mapstructure:"ttl"`
+	Capacity           uint64        `mapstructure:"capacity"`
+	CacheMisses        bool          `mapstructure:"cache_misses"`
+	InvalidateOnChange bool          `mapstructure:"invalidate_on_change"`
 }
 
 type LoggerConfig struct {
@@ -73,9 +74,10 @@ type ValueConfig struct {
 func NewDefaultConfig() *Config {
 	return &Config{
 		Cache: CacheConfig{
-			TTL:         time.Minute,
-			Capacity:    10_000,
-			CacheMisses: true,
+			TTL:                time.Minute,
+			Capacity:           10_000,
+			CacheMisses:        true,
+			InvalidateOnChange: true,
 		},
 		ErrorMode: ErrorModePropagate,
 		Mappings:  []MappingConfig{},

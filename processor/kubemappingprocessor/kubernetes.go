@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
+	k8scache "k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -103,12 +104,13 @@ func newDynamicResourceLookupForConfig(cfg *rest.Config, logger LoggerConfig, ma
 }
 
 type resourceLookup struct {
-	manager       manager.Manager
-	mapper        meta.RESTMapper
-	cachedObjects []ctrlclient.Object
-	fieldIndexes  map[schema.GroupVersionKind][]string
-	cancel        context.CancelFunc
-	done          chan error
+	manager        manager.Manager
+	mapper         meta.RESTMapper
+	cachedObjects  []ctrlclient.Object
+	fieldIndexes   map[schema.GroupVersionKind][]string
+	cancel         context.CancelFunc
+	done           chan error
+	onObjectChange func(objectIdentity)
 }
 
 func configuredFieldIndexes(mappings []MappingConfig) (map[schema.GroupVersionKind][]string, error) {
@@ -207,8 +209,19 @@ func (l *resourceLookup) Start(ctx context.Context) error {
 				return fmt.Errorf("index Kubernetes field %q for %s: %w", field, gvk, err)
 			}
 		}
-		if _, err := l.manager.GetCache().GetInformer(ctx, obj); err != nil {
+		informer, err := l.manager.GetCache().GetInformer(ctx, obj)
+		if err != nil {
 			return fmt.Errorf("create Kubernetes informer for %s: %w", obj.GetObjectKind().GroupVersionKind(), err)
+		}
+		if l.onObjectChange != nil {
+			_, err := informer.AddEventHandler(k8scache.ResourceEventHandlerFuncs{
+				AddFunc:    func(value any) { l.invalidateObject(value) },
+				UpdateFunc: func(_, value any) { l.invalidateObject(value) },
+				DeleteFunc: func(value any) { l.invalidateObject(value) },
+			})
+			if err != nil {
+				return fmt.Errorf("watch Kubernetes resource %s: %w", gvk, err)
+			}
 		}
 	}
 	managerCtx, cancel := context.WithCancel(context.Background())
@@ -229,6 +242,24 @@ func (l *resourceLookup) Start(ctx context.Context) error {
 	default:
 		return nil
 	}
+}
+
+func (l *resourceLookup) invalidateObject(value any) {
+	object, ok := value.(ctrlclient.Object)
+	if !ok {
+		switch tombstone := value.(type) {
+		case k8scache.DeletedFinalStateUnknown:
+			object, ok = tombstone.Obj.(ctrlclient.Object)
+		case *k8scache.DeletedFinalStateUnknown:
+			if tombstone != nil {
+				object, ok = tombstone.Obj.(ctrlclient.Object)
+			}
+		}
+	}
+	if !ok || object.GetName() == "" || l.onObjectChange == nil {
+		return
+	}
+	l.onObjectChange(objectIdentity{GVK: object.GetObjectKind().GroupVersionKind(), Namespace: object.GetNamespace(), Name: object.GetName()})
 }
 
 func unstructuredFieldIndex(fieldPath string) ctrlclient.IndexerFunc {

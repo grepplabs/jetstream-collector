@@ -13,6 +13,7 @@ processors:
       ttl: 1m                      # default; 0s disables the cache
       capacity: 10000              # default
       cache_misses: true           # default; cache unsuccessful lookups
+      invalidate_on_change: true   # default; invalidate entries when the matched object changes
     error_mode: propagate          # propagate (default) or ignore
     logger:
       development: false           # true uses console/debug-friendly defaults
@@ -50,6 +51,8 @@ processors:
 - `cache.ttl` controls how long mapped values are cached.
 - `cache.capacity` is required to be greater than zero when caching is enabled.
 - `cache.cache_misses` controls whether unsuccessful lookups are also cached.
+- `cache.invalidate_on_change` controls whether Kubernetes create, update, and delete events invalidate cached results for the affected object. It defaults to `true`; set it to `false` to rely on TTL expiration only. Invalidation marks entries stale so the next lookup refreshes them; stale storage is reclaimed by replacement, TTL, or capacity eviction.
+- Successful cached mappings are invalidated when their matched Kubernetes object is created, updated, or deleted. The processor identifies affected entries by the object's group/version/kind, namespace, and name; TTL remains a fallback expiration.
 - `error_mode` controls mapping failures: `propagate` returns the error; `ignore` logs it and continues without changing the target.
 - `logger.development` switches between production defaults (`json`/`info`) and dev-friendly defaults (`console`/`debug`/warn stacktraces).
 - `logger.encoder` accepts `json` or `console`.

@@ -3,6 +3,7 @@ package kubemappingprocessor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -137,4 +138,62 @@ func TestCachedMapperKeyExpirationAndDisable(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 	_, _ = cached.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {"one"}}))
 	require.Equal(t, 5, lookup.listCalls)
+}
+
+func TestCachedMapperInvalidatesEntriesForChangedObject(t *testing.T) {
+	first := unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"name": "first", "namespace": "default"}, "spec": map[string]any{"id": "one"}}}
+	first.SetGroupVersionKind(cacheTestMapping().Resource.GVK())
+	lookup := &cacheLookup{objects: []unstructured.Unstructured{first}}
+	m := newMapper(lookup, CacheConfig{TTL: time.Minute, Capacity: 10}).(*cachedMapper)
+	mapping := cacheTestMapping()
+
+	_, err := m.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {"one"}}))
+	require.NoError(t, err)
+	lookup.objects = []unstructured.Unstructured{{Object: map[string]any{"metadata": map[string]any{"name": "second", "namespace": "default"}, "spec": map[string]any{"id": "two"}}}}
+	lookup.objects[0].SetGroupVersionKind(mapping.Resource.GVK())
+	_, err = m.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {"two"}}))
+	require.NoError(t, err)
+
+	m.InvalidateObject(objectIdentity{GVK: mapping.Resource.GVK(), Namespace: "default", Name: "first"})
+	lookup.objects[0].Object["spec"].(map[string]any)["id"] = "updated"
+	result, err := m.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {"one"}}))
+	require.NoError(t, err)
+	require.Equal(t, "updated", result.value)
+	require.Equal(t, 3, lookup.listCalls)
+
+	// The second object's entry remains cached.
+	lookup.objects[0].Object["spec"].(map[string]any)["id"] = "changed again"
+	result, err = m.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {"two"}}))
+	require.NoError(t, err)
+	require.Equal(t, "two", result.value)
+	require.Equal(t, 3, lookup.listCalls)
+}
+
+func TestCacheInvalidationConfiguration(t *testing.T) {
+	lookup := &resourceLookup{}
+	m := newMapper(&cacheLookup{}, CacheConfig{TTL: time.Minute, Capacity: 10})
+
+	configureCacheInvalidation(lookup, m, false)
+	require.Nil(t, lookup.onObjectChange)
+	configureCacheInvalidation(lookup, m, true)
+	require.NotNil(t, lookup.onObjectChange)
+}
+
+func TestCachedMapperPrunesIndexEntriesAfterCapacityEviction(t *testing.T) {
+	object := unstructured.Unstructured{Object: map[string]any{
+		"metadata": map[string]any{"name": "router", "namespace": "default"},
+		"spec":     map[string]any{"id": "tenant"},
+	}}
+	object.SetGroupVersionKind(cacheTestMapping().Resource.GVK())
+	lookup := &cacheLookup{objects: []unstructured.Unstructured{object}}
+	m := newMapper(lookup, CacheConfig{TTL: time.Minute, Capacity: 2}).(*cachedMapper)
+	mapping := cacheTestMapping()
+
+	for i := 0; i < 200; i++ {
+		_, err := m.Map(context.Background(), mapping, client.NewMetadata(map[string][]string{"Token": {fmt.Sprintf("token-%d", i)}}))
+		require.NoError(t, err)
+	}
+
+	require.LessOrEqual(t, len(m.objectByCacheKey), 66)
+	require.LessOrEqual(t, len(m.keysByObject[objectIdentity{GVK: mapping.Resource.GVK(), Namespace: "default", Name: "router"}]), 66)
 }
