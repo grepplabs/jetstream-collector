@@ -1,6 +1,6 @@
 # Client Metadata Processor
 
-The `clientmetadata` processor extracts configured values from OTLP logs and stores them in the collector client metadata context for downstream consumers.
+The `clientmetadata` processor extracts configured values from OTLP logs, metrics, or traces and stores them in the collector client metadata context for downstream consumers.
 
 ## Configuration
 
@@ -16,8 +16,8 @@ processors:
 
 Each entry uses the form `${source:key}` without the braces:
 
-- `resource:<key>` reads a resource attribute from the exported log batch.
-- `telemetry:<key>` reads a log record attribute from the exported log batch.
+- `resource:<key>` reads a resource attribute from the exported batch.
+- `telemetry:<key>` reads an attribute from a log record, metric data point, or span in the exported batch.
 
 The processor copies the resolved values into `client.FromContext(ctx).Metadata` under the same key name.
 
@@ -32,4 +32,4 @@ Rules:
 
 - Existing client metadata is preserved.
 - Configured keys overwrite any existing metadata with the same name.
-- The processor currently supports logs only.
+- The processor supports logs, metrics, and traces.
