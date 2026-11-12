@@ -22,6 +22,8 @@ func (p *tracesProcessor) Capabilities() consumer.Capabilities {
 func (p *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	batches := make([]ptrace.Traces, 0)
 	byKey := make(map[string]int)
+	resources := make(map[partitionResourceKey]ptrace.ResourceSpans)
+	scopes := make(map[partitionScopeKey]ptrace.ScopeSpans)
 	for ri := 0; ri < td.ResourceSpans().Len(); ri++ {
 		rs := td.ResourceSpans().At(ri)
 		resourceAttrs := rs.Resource().Attributes().AsRaw()
@@ -42,12 +44,22 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 					idx = len(batches) - 1
 					byKey[key] = idx
 				}
-				outRS := batches[idx].ResourceSpans().AppendEmpty()
-				rs.Resource().CopyTo(outRS.Resource())
-				outRS.SetSchemaUrl(rs.SchemaUrl())
-				outSS := outRS.ScopeSpans().AppendEmpty()
-				ss.Scope().CopyTo(outSS.Scope())
-				outSS.SetSchemaUrl(ss.SchemaUrl())
+				resourceKey := partitionResourceKey{partition: idx, resource: ri}
+				outRS, ok := resources[resourceKey]
+				if !ok {
+					outRS = batches[idx].ResourceSpans().AppendEmpty()
+					rs.Resource().CopyTo(outRS.Resource())
+					outRS.SetSchemaUrl(rs.SchemaUrl())
+					resources[resourceKey] = outRS
+				}
+				scopeKey := partitionScopeKey{partition: idx, resource: ri, scope: si}
+				outSS, ok := scopes[scopeKey]
+				if !ok {
+					outSS = outRS.ScopeSpans().AppendEmpty()
+					ss.Scope().CopyTo(outSS.Scope())
+					outSS.SetSchemaUrl(ss.SchemaUrl())
+					scopes[scopeKey] = outSS
+				}
 				span.CopyTo(outSS.Spans().AppendEmpty())
 			}
 		}

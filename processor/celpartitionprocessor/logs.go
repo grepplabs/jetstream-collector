@@ -22,6 +22,8 @@ func (p *logsProcessor) Capabilities() consumer.Capabilities {
 func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	batches := make([]plog.Logs, 0)
 	byKey := make(map[string]int)
+	resources := make(map[partitionResourceKey]plog.ResourceLogs)
+	scopes := make(map[partitionScopeKey]plog.ScopeLogs)
 	for ri := 0; ri < ld.ResourceLogs().Len(); ri++ {
 		rl := ld.ResourceLogs().At(ri)
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
@@ -42,12 +44,22 @@ func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 					idx = len(batches) - 1
 					byKey[key] = idx
 				}
-				outRL := batches[idx].ResourceLogs().AppendEmpty()
-				rl.Resource().CopyTo(outRL.Resource())
-				outRL.SetSchemaUrl(rl.SchemaUrl())
-				outSL := outRL.ScopeLogs().AppendEmpty()
-				sl.Scope().CopyTo(outSL.Scope())
-				outSL.SetSchemaUrl(sl.SchemaUrl())
+				resourceKey := partitionResourceKey{partition: idx, resource: ri}
+				outRL, ok := resources[resourceKey]
+				if !ok {
+					outRL = batches[idx].ResourceLogs().AppendEmpty()
+					rl.Resource().CopyTo(outRL.Resource())
+					outRL.SetSchemaUrl(rl.SchemaUrl())
+					resources[resourceKey] = outRL
+				}
+				scopeKey := partitionScopeKey{partition: idx, resource: ri, scope: si}
+				outSL, ok := scopes[scopeKey]
+				if !ok {
+					outSL = outRL.ScopeLogs().AppendEmpty()
+					sl.Scope().CopyTo(outSL.Scope())
+					outSL.SetSchemaUrl(sl.SchemaUrl())
+					scopes[scopeKey] = outSL
+				}
 				record.CopyTo(outSL.LogRecords().AppendEmpty())
 			}
 		}
@@ -58,4 +70,15 @@ func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 	return nil
+}
+
+type partitionResourceKey struct {
+	partition int
+	resource  int
+}
+
+type partitionScopeKey struct {
+	partition int
+	resource  int
+	scope     int
 }
