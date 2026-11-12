@@ -24,11 +24,12 @@ func (p *logsProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	byKey := make(map[string]int)
 	for ri := 0; ri < ld.ResourceLogs().Len(); ri++ {
 		rl := ld.ResourceLogs().At(ri)
+		resourceAttrs := rl.Resource().Attributes().AsRaw()
 		for si := 0; si < rl.ScopeLogs().Len(); si++ {
 			sl := rl.ScopeLogs().At(si)
 			for li := 0; li < sl.LogRecords().Len(); li++ {
 				record := sl.LogRecords().At(li)
-				key, err := p.compiled.key(p.compiled.logs, record.Attributes().AsRaw(), rl.Resource().Attributes().AsRaw())
+				key, err := p.compiled.key(p.compiled.logs, record.Attributes().AsRaw(), resourceAttrs)
 				if err != nil {
 					if p.compiled.cfg.OnError == OnErrorDrop {
 						continue

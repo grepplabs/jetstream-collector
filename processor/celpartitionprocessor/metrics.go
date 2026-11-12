@@ -24,13 +24,14 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	byKey := make(map[string]int)
 	for ri := 0; ri < md.ResourceMetrics().Len(); ri++ {
 		rm := md.ResourceMetrics().At(ri)
+		resourceAttrs := rm.Resource().Attributes().AsRaw()
 		for si := 0; si < rm.ScopeMetrics().Len(); si++ {
 			sm := rm.ScopeMetrics().At(si)
 			for mi := 0; mi < sm.Metrics().Len(); mi++ {
 				metric := sm.Metrics().At(mi)
 				outByKey := make(map[string]pmetric.Metric)
 				visit := func(attrs map[string]any, copyPoint func(pmetric.Metric)) error {
-					key, err := p.compiled.key(p.compiled.metrics, attrs, rm.Resource().Attributes().AsRaw())
+					key, err := p.compiled.key(p.compiled.metrics, attrs, resourceAttrs)
 					if err != nil {
 						if p.compiled.cfg.OnError == OnErrorDrop {
 							return nil

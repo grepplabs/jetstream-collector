@@ -2,6 +2,7 @@ package celpartitionprocessor
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"cel.dev/cel-go/cel"
@@ -75,12 +76,16 @@ func getAttr(mapValue, keyValue ref.Val) ref.Val {
 }
 
 func (c *compiledConfig) key(expressions []compiledExpression, attrs, resourceAttrs map[string]any) (string, error) {
-	parts := make([]string, 0, len(expressions))
-	for _, expression := range expressions {
-		value, _, err := expression.program.Eval(map[string]any{expression.variable: map[string]any{
-			"attributes": attrs,
-			"resource":   map[string]any{"attributes": resourceAttrs},
-		}})
+	if len(expressions) == 0 {
+		return "", nil
+	}
+	activation := map[string]any{expressions[0].variable: map[string]any{
+		"attributes": attrs,
+		"resource":   map[string]any{"attributes": resourceAttrs},
+	}}
+	var key strings.Builder
+	for i, expression := range expressions {
+		value, _, err := expression.program.Eval(activation)
 		if err != nil {
 			return "", fmt.Errorf("evaluate CEL %q: %w", expression.source, err)
 		}
@@ -88,9 +93,10 @@ func (c *compiledConfig) key(expressions []compiledExpression, attrs, resourceAt
 		if !ok {
 			return "", fmt.Errorf("CEL expression %q returned %s; partition key expressions must return strings", expression.source, value.Type())
 		}
-		parts = append(parts, strconvQuote(string(str)))
+		if i > 0 {
+			key.WriteByte('|')
+		}
+		key.WriteString(strconv.Quote(string(str)))
 	}
-	return strings.Join(parts, "|"), nil
+	return key.String(), nil
 }
-
-func strconvQuote(value string) string { return fmt.Sprintf("%q", value) }

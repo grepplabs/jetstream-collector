@@ -24,11 +24,12 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 	byKey := make(map[string]int)
 	for ri := 0; ri < td.ResourceSpans().Len(); ri++ {
 		rs := td.ResourceSpans().At(ri)
+		resourceAttrs := rs.Resource().Attributes().AsRaw()
 		for si := 0; si < rs.ScopeSpans().Len(); si++ {
 			ss := rs.ScopeSpans().At(si)
 			for i := 0; i < ss.Spans().Len(); i++ {
 				span := ss.Spans().At(i)
-				key, err := p.compiled.key(p.compiled.traces, span.Attributes().AsRaw(), rs.Resource().Attributes().AsRaw())
+				key, err := p.compiled.key(p.compiled.traces, span.Attributes().AsRaw(), resourceAttrs)
 				if err != nil {
 					if p.compiled.cfg.OnError == OnErrorDrop {
 						continue
