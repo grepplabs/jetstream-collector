@@ -13,6 +13,7 @@ receivers:
     path: ../../receiver/jetstreamreceiver
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.165.0
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.165.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.165.0
   - gomod: github.com/elastic/opentelemetry-collector-components/receiver/loadgenreceiver v0.81.0
 
 processors:
@@ -36,6 +37,7 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.164.1
 
 exporters:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.165.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.164.1
   - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
     path: ../../exporter/jetstreamexporter

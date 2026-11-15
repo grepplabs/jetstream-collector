@@ -17,6 +17,7 @@ import (
 	"github.com/grepplabs/jetstream-collector/processor/partitionbyattrsprocessor"
 	"github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
@@ -28,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -62,6 +64,7 @@ func main() {
 					component.MustNewType("otlp"):      otlpreceiver.NewFactory(),
 					component.MustNewType("nop"):       nopreceiver.NewFactory(),
 					component.MustNewType("loadgen"):   loadgenreceiver.NewFactory(),
+					component.MustNewType("kafka"):     kafkareceiver.NewFactory(),
 				},
 				Processors: map[component.Type]processor.Factory{
 					component.MustNewType("attributes"):             attributesprocessor.NewFactory(),
@@ -83,6 +86,7 @@ func main() {
 					component.MustNewType("otlp"):          otlpexporter.NewFactory(),
 					component.MustNewType("otlphttp"):      otlphttpexporter.NewFactory(),
 					component.MustNewType("nop"):           nopexporter.NewFactory(),
+					component.MustNewType("kafka"):         kafkaexporter.NewFactory(),
 				},
 				Connectors: map[component.Type]connector.Factory{
 					component.MustNewType("routing"): routingconnector.NewFactory(),
