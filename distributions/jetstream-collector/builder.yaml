@@ -9,6 +9,8 @@ excludes:
   - google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 
 receivers:
+  - gomod: github.com/grepplabs/jetstream-collector/receiver/s3jetstreamreceiver v0.0.0
+    path: ../../receiver/s3jetstreamreceiver
   - gomod: github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver v0.0.0
     path: ../../receiver/jetstreamreceiver
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.165.0
@@ -37,6 +39,8 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.165.0
 
 exporters:
+  - gomod: github.com/grepplabs/jetstream-collector/exporter/s3jetstreamexporter v0.0.0
+    path: ../../exporter/s3jetstreamexporter
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.165.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.165.0
   - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
@@ -50,6 +54,8 @@ exporters:
 
 replaces:
   - github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../../pkg/jetstream
+  - github.com/grepplabs/jetstream-collector/pkg/s3 => ../../../pkg/s3
+  - github.com/grepplabs/jetstream-collector/pkg/s3jetstream => ../../../pkg/s3jetstream
   - github.com/grepplabs/jetstream-collector/pkg/template => ../../../pkg/template
 
 providers:

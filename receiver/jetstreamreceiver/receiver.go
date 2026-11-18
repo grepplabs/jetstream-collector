@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	sharedjetstream "github.com/grepplabs/jetstream-collector/pkg/jetstream"
 	"github.com/nats-io/nats.go/jetstream"
@@ -56,9 +57,15 @@ type jetstreamReceiver struct {
 	js           jetstream.JetStream
 	subscription jetstream.ConsumeContext
 	cancel       context.CancelFunc
-	jobs         chan jetstream.Msg
+	jobs         chan messageWorkItem
 	workersWG    sync.WaitGroup
 	started      bool
+	ackProgress  time.Duration
+}
+
+type messageWorkItem struct {
+	msg  jetstream.Msg
+	stop func()
 }
 
 func newLogsReceiver(set receiver.Settings, cfg *Config, next consumer.Logs) (receiver.Logs, error) {
@@ -161,6 +168,22 @@ func (r *jetstreamReceiver) Start(ctx context.Context, _ component.Host) error {
 		r.metrics.recordStartupFailure(ctx, stageLookupConsumer)
 		return fmt.Errorf("lookup consumer %q: %w", consumerName, err)
 	}
+	if r.cfg.AckProgress {
+		info, infoErr := pullConsumer.Info(ctx)
+		if infoErr != nil {
+			if conn := js.Conn(); conn != nil {
+				conn.Close()
+			}
+			r.metrics.recordStartupFailure(ctx, stageLookupConsumer)
+			return fmt.Errorf("inspect consumer %q ack wait: %w", consumerName, infoErr)
+		}
+		r.ackProgress = 10 * time.Second
+		if info.Config.AckWait > 0 && info.Config.AckWait/3 < r.ackProgress {
+			r.ackProgress = info.Config.AckWait / 3
+		}
+	} else {
+		r.ackProgress = 0
+	}
 
 	runCtx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
@@ -202,7 +225,7 @@ func (r *jetstreamReceiver) startWorkers(ctx context.Context) {
 		return
 	}
 
-	r.jobs = make(chan jetstream.Msg, r.parallelism())
+	r.jobs = make(chan messageWorkItem, r.parallelism())
 	for i := 0; i < r.cfg.Workers; i++ {
 		r.workersWG.Add(1)
 		go r.workerLoop(ctx)
@@ -258,15 +281,43 @@ func (r *jetstreamReceiver) stopWorkers() {
 }
 
 func (r *jetstreamReceiver) consumeMessage(ctx context.Context, msg jetstream.Msg) error {
+	item := messageWorkItem{msg: msg, stop: func() {}}
+	if r.cfg.AckProgress {
+		item.stop = r.startAckProgress(ctx, msg)
+	}
 	if r.jobs != nil {
 		select {
-		case r.jobs <- msg:
+		case r.jobs <- item:
 			return nil
 		case <-ctx.Done():
+			item.stop()
 			return ctx.Err()
 		}
 	}
+	defer item.stop()
 	return r.handleMessage(ctx, msg)
+}
+
+func (r *jetstreamReceiver) startAckProgress(ctx context.Context, msg jetstream.Msg) func() {
+	if !r.cfg.AckProgress || r.ackProgress <= 0 {
+		return func() {}
+	}
+	progressCtx, cancel := context.WithCancel(ctx)
+	go func() {
+		ticker := time.NewTicker(r.ackProgress)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := msg.InProgress(); err != nil {
+					r.logger.Warn("failed to extend JetStream ack wait", zap.Error(err))
+				}
+			case <-progressCtx.Done():
+				return
+			}
+		}
+	}()
+	return cancel
 }
 
 func (r *jetstreamReceiver) Shutdown(_ context.Context) error {

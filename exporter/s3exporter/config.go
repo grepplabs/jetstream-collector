@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	s3client "github.com/grepplabs/jetstream-collector/pkg/s3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -12,7 +13,7 @@ import (
 )
 
 const (
-	defaultRegion            = "eu-central-1"
+	defaultRegion            = s3client.DefaultRegion
 	defaultFilenameExtension = "log"
 	compressionNone          = "none"
 	compressionGzip          = "gzip"
@@ -23,12 +24,7 @@ const (
 	contentEncodingGzip      = "gzip"
 )
 
-type CredentialsConfig struct {
-	AccessKeyID     string       `mapstructure:"access_key_id"`
-	SecretAccessKey string       `mapstructure:"secret_access_key"`
-	SessionToken    string       `mapstructure:"session_token"`
-	Provider        component.ID `mapstructure:"provider"`
-}
+type CredentialsConfig = s3client.S3CredentialsConfig
 
 type MetricsBucketsConfig struct {
 	UploadDuration []float64 `mapstructure:"upload_duration"`

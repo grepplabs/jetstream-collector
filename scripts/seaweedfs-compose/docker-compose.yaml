@@ -1,0 +1,16 @@
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.54
+    restart: unless-stopped
+    command: ["mini", "-dir=/data", "-ip.bind=0.0.0.0"]
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: admin123
+      S3_BUCKET: otlp
+    ports:
+      - "8333:8333"
+    volumes:
+      - seaweedfs-data:/data
+
+volumes:
+  seaweedfs-data:

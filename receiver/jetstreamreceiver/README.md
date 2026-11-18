@@ -14,6 +14,7 @@ receivers:
     workers: 0
     batch_max_messages: 16
     batch_max_wait: 500ms
+    ack_progress: false
     metrics_buckets:
       consume_duration: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5]
       payload_size: [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
@@ -50,6 +51,7 @@ receivers:
 - `workers`: Number of worker goroutines. Default: `0`. In `single` mode it enables the internal queue and parallel message handling; in `batch` mode it controls how many batch fetch loops run in parallel.
 - `batch_max_messages`: Maximum number of messages fetched per batch. Default: `16`.
 - `batch_max_wait`: Maximum wait time for a batch fetch before processing a partial batch. Default: `500ms`.
+- `ack_progress`: Periodically extend the JetStream acknowledgement deadline while messages are queued or being processed. Applies to single and batch modes. Default: `false`; when enabled, the interval is at most one third of the consumer's configured `ack_wait` (capped at 10s).
 - `metrics_buckets`: Histogram bucket configuration. Fields are optional and default independently when omitted.
 - `metrics_buckets.consume_duration`: Bucket boundaries for `jetstream_receiver_consume_duration` and `jetstream_receiver_batch_duration`. If omitted, the current defaults are used.
 - `metrics_buckets.payload_size`: Bucket boundaries for `jetstream_receiver_payload_size` and `jetstream_receiver_batch_size`. If omitted, the current defaults are used.

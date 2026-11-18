@@ -20,11 +20,13 @@ func (r *jetstreamReceiver) workerLoop(ctx context.Context) {
 
 	for {
 		select {
-		case msg, ok := <-r.jobs:
+		case item, ok := <-r.jobs:
 			if !ok {
 				return
 			}
-			if err := r.handleMessage(ctx, msg); err != nil {
+			err := r.handleMessage(ctx, item.msg)
+			item.stop()
+			if err != nil {
 				r.logger.Error("failed to handle jetstream message", zap.Error(err))
 			}
 		case <-ctx.Done():

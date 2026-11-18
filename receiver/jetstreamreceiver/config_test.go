@@ -27,6 +27,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.Equal(t, defaultBatchMaxMessages, cfg.BatchMaxMessages)
 	require.Equal(t, defaultBatchMaxWait, cfg.BatchMaxWait)
 	require.False(t, cfg.BatchGroupBySubject)
+	require.False(t, cfg.AckProgress)
 	require.Equal(t, defaultConsumeDurationBuckets, cfg.MetricsBuckets.ConsumeDuration)
 	require.Equal(t, defaultPayloadSizeBuckets, cfg.MetricsBuckets.PayloadSize)
 	require.Equal(t, sharedjetstream.BootstrapConfig{}, cfg.Bootstrap)

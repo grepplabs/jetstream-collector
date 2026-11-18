@@ -47,6 +47,7 @@ type Config struct {
 	BatchMaxMessages    int32                            `mapstructure:"batch_max_messages"`
 	BatchMaxWait        time.Duration                    `mapstructure:"batch_max_wait"`
 	BatchGroupBySubject bool                             `mapstructure:"batch_group_by_subject"`
+	AckProgress         bool                             `mapstructure:"ack_progress"`
 	Compression         string                           `mapstructure:"compression"`
 	ConsumeRetry        ConsumeRetryConfig               `mapstructure:"consume_retry"`
 	MetricsBuckets      MetricsBucketsConfig             `mapstructure:"metrics_buckets"`

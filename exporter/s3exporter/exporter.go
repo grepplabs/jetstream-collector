@@ -2,22 +2,19 @@ package s3exporter
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/google/uuid"
+	s3client "github.com/grepplabs/jetstream-collector/pkg/s3"
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -26,12 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.uber.org/zap"
 )
-
-var gzipWriterPool = sync.Pool{
-	New: func() any {
-		return gzip.NewWriter(io.Discard)
-	},
-}
 
 // otlpRequest matches the OTLP export request methods used by the S3 exporter.
 type otlpRequest interface {
@@ -70,6 +61,7 @@ type s3Exporter struct {
 
 	mu      sync.Mutex
 	client  objectPutter
+	s3Close func()
 	started bool
 }
 
@@ -105,13 +97,14 @@ func (e *s3Exporter) Start(ctx context.Context, host component.Host) error {
 		return nil
 	}
 
-	client, err := e.connect(ctx, host)
+	client, closeS3, err := e.connect(ctx, host)
 	if err != nil {
 		e.metrics.recordStartupFailure(ctx, stageConnect)
 		return err
 	}
 
 	e.client = client
+	e.s3Close = closeS3
 	e.started = true
 	e.metrics.recordStartupSuccess(ctx)
 	e.logger.Info("s3 exporter started",
@@ -127,6 +120,10 @@ func (e *s3Exporter) Shutdown(_ context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.client = nil
+	if e.s3Close != nil {
+		e.s3Close()
+		e.s3Close = nil
+	}
 	e.started = false
 	return nil
 }
@@ -157,7 +154,7 @@ func (e *s3Exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	if e.cfg.Compression == compressionGzip {
-		payload, err = gzipCompress(payload)
+		payload, err = s3client.GzipBytes(payload)
 		if err != nil {
 			e.metrics.recordUploadFailure(ctx, stageCompress, "", 0)
 			return fmt.Errorf("gzip compress payload: %w", err)
@@ -223,8 +220,7 @@ func (e *s3Exporter) upload(ctx context.Context, objectName string, payload []by
 }
 
 func s3ErrorDetails(err error) (string, int) {
-	var resp minio.ErrorResponse
-	if errors.As(err, &resp) {
+	if resp, ok := errors.AsType[minio.ErrorResponse](err); ok {
 		return resp.Code, resp.StatusCode
 	}
 	return "", 0
@@ -243,13 +239,11 @@ func classifyS3Error(logger *zap.Logger, err error) error {
 		return consumererror.NewRetryableError(err)
 	}
 
-	var netErr net.Error
-	if errors.As(err, &netErr) {
+	if _, ok := errors.AsType[net.Error](err); ok {
 		return consumererror.NewRetryableError(err)
 	}
 
-	var resp minio.ErrorResponse
-	if errors.As(err, &resp) {
+	if resp, ok := errors.AsType[minio.ErrorResponse](err); ok {
 		switch resp.Code {
 		case "SlowDown",
 			"RequestTimeout",
@@ -317,112 +311,22 @@ func (e *s3Exporter) buildObjectName(prefix string) (string, error) {
 	return fileName, nil
 }
 
-func (e *s3Exporter) connect(ctx context.Context, host component.Host) (objectPutter, error) {
-	endpoint, secure := e.resolveEndpointAndSecure()
-	creds, err := e.resolveCredentials(ctx, host)
-	if err != nil {
-		return nil, err
-	}
-
-	opts := &minio.Options{
-		Creds:        creds,
-		Secure:       secure,
-		Region:       e.resolvedRegion(),
-		BucketLookup: minio.BucketLookupAuto,
-	}
-	if e.cfg.ForcePathStyle {
-		opts.BucketLookup = minio.BucketLookupPath
-	}
-
-	return minio.New(endpoint, opts)
-}
-
-func (e *s3Exporter) resolveCredentials(ctx context.Context, host component.Host) (*credentials.Credentials, error) {
-	if e.cfg.Credentials.AccessKeyID != "" || e.cfg.Credentials.SecretAccessKey != "" {
-		return credentials.NewStaticV4(e.cfg.Credentials.AccessKeyID, e.cfg.Credentials.SecretAccessKey, e.cfg.Credentials.SessionToken), nil
-	}
-
-	if e.cfg.Credentials.Provider == (component.ID{}) {
-		return nil, fmt.Errorf("no credentials configured")
-	}
-	if host == nil {
-		return nil, fmt.Errorf("unknown credentials provider extension %q", e.cfg.Credentials.Provider)
-	}
-
-	ext, ok := host.GetExtensions()[e.cfg.Credentials.Provider]
-	if !ok {
-		return nil, fmt.Errorf("unknown credentials provider extension %q", e.cfg.Credentials.Provider)
-	}
-
-	provider, ok := ext.(interface {
-		GetCredentialsProvider() aws.CredentialsProvider
+func (e *s3Exporter) connect(ctx context.Context, host component.Host) (objectPutter, func(), error) {
+	return s3client.NewS3ClientWithClose(ctx, host, s3client.S3ClientConfig{
+		Endpoint:       e.cfg.Endpoint,
+		Region:         e.cfg.Region,
+		Secure:         e.cfg.Secure,
+		ForcePathStyle: e.cfg.ForcePathStyle,
+		Credentials:    e.cfg.Credentials,
 	})
-	if !ok {
-		return nil, fmt.Errorf("extension %q does not provide retrievable credentials", e.cfg.Credentials.Provider)
-	}
-
-	creds, err := provider.GetCredentialsProvider().Retrieve(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return credentials.NewStaticV4(creds.AccessKeyID, creds.SecretAccessKey, creds.SessionToken), nil
-}
-
-func (e *s3Exporter) resolveEndpointAndSecure() (string, bool) {
-	endpoint := strings.TrimSpace(e.cfg.Endpoint)
-	secure := e.cfg.Secure
-	if endpoint == "" {
-		endpoint = defaultAWSEndpoint(e.resolvedRegion())
-		return endpoint, secure
-	}
-
-	if u, err := url.Parse(endpoint); err == nil && u.Scheme != "" && u.Host != "" {
-		if u.Scheme == "http" {
-			secure = false
-		}
-		if u.Scheme == "https" {
-			secure = true
-		}
-		endpoint = u.Host
-	}
-
-	return endpoint, secure
 }
 
 func (e *s3Exporter) resolvedEndpoint() string {
-	endpoint, _ := e.resolveEndpointAndSecure()
+	endpoint, _, _ := s3client.ResolveEndpoint(e.cfg.Endpoint, e.cfg.Region, e.cfg.Secure)
 	return endpoint
 }
 
 func (e *s3Exporter) resolvedRegion() string {
-	if e.cfg.Region != "" {
-		return e.cfg.Region
-	}
-	return defaultRegion
-}
-
-func defaultAWSEndpoint(region string) string {
-	if region == "" || region == defaultRegion {
-		return "s3.amazonaws.com"
-	}
-	return "s3." + region + ".amazonaws.com"
-}
-
-func gzipCompress(body []byte) ([]byte, error) {
-	gz := gzipWriterPool.Get().(*gzip.Writer)
-	defer func() {
-		gz.Reset(io.Discard)
-		gzipWriterPool.Put(gz)
-	}()
-
-	var b bytes.Buffer
-	gz.Reset(&b)
-
-	if _, err := gz.Write(body); err != nil {
-		return nil, err
-	}
-	if err := gz.Close(); err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
+	_, _, region := s3client.ResolveEndpoint(e.cfg.Endpoint, e.cfg.Region, e.cfg.Secure)
+	return region
 }
