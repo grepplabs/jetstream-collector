@@ -1,8 +1,8 @@
 # S3 Exporter
 
-The `s3` exporter stores OTLP logs in S3-compatible object storage.
+The `s3` exporter stores OTLP logs, metrics, and traces in S3-compatible object storage.
 
-It marshals each exported log batch, optionally compresses the payload, and uploads it as a single object.
+It marshals each exported signal batch, optionally compresses the payload, and uploads it as a single object.
 
 ## Configuration
 
@@ -70,7 +70,7 @@ credentials:
 
 ## Filename Templates
 
-When `filename_template` is set, the exporter resolves a key prefix from the current log batch.
+When `filename_template` is set, the exporter resolves a key prefix from the current signal batch.
 
 Supported template sources:
 
@@ -90,8 +90,7 @@ Rules:
 
 - `header:<key>` reads from collector client metadata.
 - `resource:<key>` reads from resource attributes.
-- `record:<key>` reads from log record attributes.
-- `telemetry:<key>` reads from telemetry attributes.
+- `record:<key>` and `telemetry:<key>` are aliases. Both read from log record attributes, metric data point attributes, or span attributes, depending on the signal.
 - `timefmt:<layout>` formats the batch timestamp using the supplied layout.
 
 If `filename_append_uuid` is also enabled, the exporter appends a UUID after the resolved prefix.
@@ -114,7 +113,7 @@ Example output:
 
 - `marshaler: proto` uploads OTLP protobuf payloads.
 - `marshaler: json` uploads OTLP JSON payloads.
-- The exporter currently handles logs only.
+- The exporter supports logs, metrics, and traces.
 
 ## Compression
 
@@ -129,6 +128,8 @@ The exporter reports counters and histograms for:
 - Upload attempts, successes, and failures
 - Upload duration
 - Uploaded payload size
+
+Upload metrics include a `signal` attribute (`logs`, `metrics`, or `traces`). Startup metrics are signal independent.
 
 ## Notes
 

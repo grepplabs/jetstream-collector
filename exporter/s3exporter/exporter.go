@@ -21,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/zap"
 )
 
@@ -133,51 +137,61 @@ func (e *s3Exporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *s3Exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	return e.consume(ctx, signalLogs, newLogsKeyPrefixResolver(ld, e.filenameTemplate, time.Now().UTC()), plogotlp.NewExportRequestFromLogs(ld))
+}
+
+func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return e.consume(ctx, signalMetrics, newMetricsKeyPrefixResolver(md, e.filenameTemplate, time.Now().UTC()), pmetricotlp.NewExportRequestFromMetrics(md))
+}
+
+func (e *s3Exporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	return e.consume(ctx, signalTraces, newTracesKeyPrefixResolver(td, e.filenameTemplate, time.Now().UTC()), ptraceotlp.NewExportRequestFromTraces(td))
+}
+
+func (e *s3Exporter) consume(ctx context.Context, signal string, resolver KeyPrefixResolver, req otlpRequest) error {
 	start := time.Now()
-	e.metrics.recordUploadAttempt(ctx)
+	e.metrics.recordUploadAttempt(ctx, signal)
 	defer func() {
-		e.metrics.recordUploadDuration(ctx, time.Since(start))
+		e.metrics.recordUploadDuration(ctx, signal, time.Since(start))
 	}()
 
-	resolvedAt := time.Now().UTC()
-	filenameTemplateValue, err := newLogsKeyPrefixResolver(ld, e.filenameTemplate, resolvedAt).Resolve(ctx)
+	filenameTemplateValue, err := resolver.Resolve(ctx)
 	if err != nil {
-		e.metrics.recordUploadFailure(ctx, stageResolveFilename, "", 0)
+		e.metrics.recordUploadFailure(ctx, signal, stageResolveFilename, "", 0)
 		return consumererror.NewPermanent(fmt.Errorf("resolve filename_template: %w", err))
 	}
 
-	req := plogotlp.NewExportRequestFromLogs(ld)
 	payload, err := marshalOTLP(req, e.cfg.MarshalerType)
 	if err != nil {
-		e.metrics.recordUploadFailure(ctx, stageMarshal, "", 0)
+		e.metrics.recordUploadFailure(ctx, signal, stageMarshal, "", 0)
 		return err
 	}
 
 	if e.cfg.Compression == compressionGzip {
 		payload, err = s3client.GzipBytes(payload)
 		if err != nil {
-			e.metrics.recordUploadFailure(ctx, stageCompress, "", 0)
+			e.metrics.recordUploadFailure(ctx, signal, stageCompress, "", 0)
 			return fmt.Errorf("gzip compress payload: %w", err)
 		}
 	}
 
-	e.metrics.recordPayloadSize(ctx, len(payload))
+	e.metrics.recordPayloadSize(ctx, signal, len(payload))
 
 	objectName, err := e.buildObjectName(filenameTemplateValue)
 	if err != nil {
-		e.metrics.recordUploadFailure(ctx, stageBuildObjectName, "", 0)
+		e.metrics.recordUploadFailure(ctx, signal, stageBuildObjectName, "", 0)
 		return consumererror.NewPermanent(err)
 	}
 
-	return e.upload(ctx, objectName, payload)
+	return e.upload(ctx, signal, objectName, payload)
 }
 
-func (e *s3Exporter) upload(ctx context.Context, objectName string, payload []byte) error {
+func (e *s3Exporter) upload(ctx context.Context, signal, objectName string, payload []byte) error {
 	e.mu.Lock()
 	client := e.client
 	e.mu.Unlock()
 	if client == nil {
-		e.metrics.recordUploadFailure(ctx, stageUpload, "unknown", 0)
+		e.metrics.recordUploadFailure(ctx, signal, stageUpload, "unknown", 0)
 		return fmt.Errorf("s3 client is not started")
 	}
 
@@ -199,7 +213,7 @@ func (e *s3Exporter) upload(ctx context.Context, objectName string, payload []by
 	_, err := client.PutObject(ctx, e.cfg.Bucket, objectName, bytes.NewReader(payload), int64(len(payload)), opts)
 	if err != nil {
 		code, statusCode := s3ErrorDetails(err)
-		e.metrics.recordUploadFailure(ctx, stageUpload, code, statusCode)
+		e.metrics.recordUploadFailure(ctx, signal, stageUpload, code, statusCode)
 		return classifyS3Error(e.logger,
 			fmt.Errorf(
 				"put object bucket=%q key=%q: %w",
@@ -210,7 +224,7 @@ func (e *s3Exporter) upload(ctx context.Context, objectName string, payload []by
 		)
 	}
 
-	e.metrics.recordUploadSuccess(ctx)
+	e.metrics.recordUploadSuccess(ctx, signal)
 	e.logger.Debug("uploaded s3 object",
 		zap.String("bucket", e.cfg.Bucket),
 		zap.String("key", objectName),

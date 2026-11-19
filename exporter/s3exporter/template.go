@@ -8,6 +8,8 @@ import (
 	tmpl "github.com/grepplabs/jetstream-collector/pkg/template"
 	"github.com/itchyny/timefmt-go"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -94,6 +96,56 @@ type logsKeyPrefixResolver struct {
 
 func newLogsKeyPrefixResolver(logs plog.Logs, template *keyPrefixTemplate, resolvedAt time.Time) KeyPrefixResolver {
 	return &logsKeyPrefixResolver{Logs: logs, template: template, resolvedAt: resolvedAt}
+}
+
+type metricsKeyPrefixResolver struct {
+	tmpl.MetricsValues
+	template   *keyPrefixTemplate
+	resolvedAt time.Time
+}
+
+func newMetricsKeyPrefixResolver(metrics pmetric.Metrics, template *keyPrefixTemplate, resolvedAt time.Time) KeyPrefixResolver {
+	return &metricsKeyPrefixResolver{MetricsValues: tmpl.MetricsValues{Metrics: metrics}, template: template, resolvedAt: resolvedAt}
+}
+
+func (r *metricsKeyPrefixResolver) Resolve(ctx context.Context) (string, error) {
+	if r.template == nil {
+		return "", nil
+	}
+	return r.template.resolve(ctx, r)
+}
+
+func (r *metricsKeyPrefixResolver) ResolvePart(ctx context.Context, part tmpl.Part) (string, error) {
+	return resolveKeyPrefixPart(ctx, part, r)
+}
+
+func (r *metricsKeyPrefixResolver) TimefmtValue(_ context.Context, layout string) (string, error) {
+	return timefmt.Format(r.resolvedAt, layout), nil
+}
+
+type tracesKeyPrefixResolver struct {
+	tmpl.TracesValues
+	template   *keyPrefixTemplate
+	resolvedAt time.Time
+}
+
+func newTracesKeyPrefixResolver(traces ptrace.Traces, template *keyPrefixTemplate, resolvedAt time.Time) KeyPrefixResolver {
+	return &tracesKeyPrefixResolver{TracesValues: tmpl.TracesValues{Traces: traces}, template: template, resolvedAt: resolvedAt}
+}
+
+func (r *tracesKeyPrefixResolver) Resolve(ctx context.Context) (string, error) {
+	if r.template == nil {
+		return "", nil
+	}
+	return r.template.resolve(ctx, r)
+}
+
+func (r *tracesKeyPrefixResolver) ResolvePart(ctx context.Context, part tmpl.Part) (string, error) {
+	return resolveKeyPrefixPart(ctx, part, r)
+}
+
+func (r *tracesKeyPrefixResolver) TimefmtValue(_ context.Context, layout string) (string, error) {
+	return timefmt.Format(r.resolvedAt, layout), nil
 }
 
 func (r *logsKeyPrefixResolver) Resolve(ctx context.Context) (string, error) {
