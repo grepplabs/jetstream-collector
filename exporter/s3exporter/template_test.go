@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestFilenameTemplateTimeFmt(t *testing.T) {
@@ -16,7 +18,9 @@ func TestFilenameTemplateTimeFmt(t *testing.T) {
 	require.NoError(t, err)
 
 	resolvedAt := time.Date(2026, 7, 22, 13, 14, 15, 987654321, time.UTC)
-	logs := newTestLogs(time.Date(1999, 1, 2, 3, 4, 5, 6, time.UTC))
+	logs := plog.NewLogs()
+	record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	record.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(1999, 1, 2, 3, 4, 5, 6, time.UTC)))
 	got, err := newLogsKeyPrefixResolver(logs, tpl, resolvedAt).Resolve(context.Background())
 	require.NoError(t, err)
 
@@ -24,11 +28,34 @@ func TestFilenameTemplateTimeFmt(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func newTestLogs(ts time.Time) plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	rec := sl.LogRecords().AppendEmpty()
-	rec.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-	return logs
+func TestMetricsFilenameTemplate(t *testing.T) {
+	tpl, err := newKeyPrefixTemplate("${resource:service.name}/${record:tenant}/${timefmt:%Y/%m/%d}")
+	require.NoError(t, err)
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "checkout")
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.Gauge().DataPoints().AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+
+	resolvedAt := time.Date(2026, 7, 22, 13, 14, 15, 0, time.UTC)
+	got, err := newMetricsKeyPrefixResolver(metrics, tpl, resolvedAt).Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "checkout/tenant-a/2026/07/22", got)
+}
+
+func TestTracesFilenameTemplate(t *testing.T) {
+	tpl, err := newKeyPrefixTemplate("${resource:service.name}/${record:tenant}/${timefmt:%Y/%m/%d}")
+	require.NoError(t, err)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "checkout")
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("tenant", "tenant-a")
+
+	resolvedAt := time.Date(2026, 7, 22, 13, 14, 15, 0, time.UTC)
+	got, err := newTracesKeyPrefixResolver(traces, tpl, resolvedAt).Resolve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "checkout/tenant-a/2026/07/22", got)
 }

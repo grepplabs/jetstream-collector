@@ -12,13 +12,47 @@ import (
 )
 
 var _ consumer.Logs = (*s3Exporter)(nil)
+var _ consumer.Metrics = (*s3Exporter)(nil)
+var _ consumer.Traces = (*s3Exporter)(nil)
 
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		func() component.Config { return NewDefaultConfig() },
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
+}
+
+func createMetricsExporter(ctx context.Context, set exporter.Settings, baseCfg component.Config) (exporter.Metrics, error) {
+	cfg, ok := baseCfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("config structure is not of type *s3exporter.Config")
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	exp, err := newExporter(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewMetrics(ctx, set, cfg, exp.ConsumeMetrics, helperOptions(cfg, exp)...)
+}
+
+func createTracesExporter(ctx context.Context, set exporter.Settings, baseCfg component.Config) (exporter.Traces, error) {
+	cfg, ok := baseCfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("config structure is not of type *s3exporter.Config")
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	exp, err := newExporter(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewTraces(ctx, set, cfg, exp.ConsumeTraces, helperOptions(cfg, exp)...)
 }
 
 func helperOptions(cfg *Config, exp *s3Exporter) []exporterhelper.Option {

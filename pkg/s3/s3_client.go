@@ -29,13 +29,6 @@ type S3ClientConfig struct {
 	Credentials    S3CredentialsConfig
 }
 
-// NewS3Client resolves credentials and builds a MinIO client for AWS S3 or an
-// S3-compatible endpoint.
-func NewS3Client(ctx context.Context, host component.Host, cfg S3ClientConfig) (*minio.Client, error) {
-	client, _, err := NewS3ClientWithClose(ctx, host, cfg)
-	return client, err
-}
-
 // NewS3ClientWithClose builds an S3 client and returns a function that closes
 // idle HTTP connections owned by the client.
 func NewS3ClientWithClose(ctx context.Context, host component.Host, cfg S3ClientConfig) (*minio.Client, func(), error) {

@@ -27,12 +27,14 @@ func TestResolveS3Endpoint(t *testing.T) {
 	}
 }
 
-func TestNewS3ClientBuildsWithStaticCredentials(t *testing.T) {
-	client, err := NewS3Client(context.Background(), nil, S3ClientConfig{
+func TestNewS3ClientWithCloseBuildsWithStaticCredentials(t *testing.T) {
+	client, closeClient, err := NewS3ClientWithClose(context.Background(), nil, S3ClientConfig{
 		Endpoint:    "localhost:9000",
 		Region:      "test-1",
 		Credentials: S3CredentialsConfig{AccessKeyID: "access", SecretAccessKey: "secret"},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, client)
+	require.NotNil(t, closeClient)
+	closeClient()
 }

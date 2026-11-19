@@ -67,8 +67,11 @@ func (e *s3JetStreamExporter) Start(ctx context.Context, host component.Host) er
 		return nil
 	}
 	s3, closeS3, err := s3client.NewS3ClientWithClose(ctx, host, s3client.S3ClientConfig{
-		Endpoint: e.cfg.S3.Endpoint, Region: e.cfg.S3.Region, Secure: e.cfg.S3.Secure,
-		ForcePathStyle: e.cfg.S3.ForcePathStyle, Credentials: e.cfg.S3.Credentials,
+		Endpoint:       e.cfg.S3.Endpoint,
+		Region:         e.cfg.S3.Region,
+		Secure:         e.cfg.S3.Secure,
+		ForcePathStyle: e.cfg.S3.ForcePathStyle,
+		Credentials:    e.cfg.S3.Credentials,
 	})
 	if err != nil {
 		return err

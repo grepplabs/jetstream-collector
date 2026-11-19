@@ -12,8 +12,13 @@ import (
 )
 
 const (
+	signalLogs    = "logs"
+	signalMetrics = "metrics"
+	signalTraces  = "traces"
+
 	attrExporter   = "exporter"
 	attrBucket     = "bucket"
+	attrSignal     = "signal"
 	attrStage      = "stage"
 	attrCode       = "code"
 	attrStatusCode = "status_code"
@@ -110,32 +115,33 @@ func effectiveHistogramBuckets(buckets, defaults []float64) []float64 {
 	return append([]float64(nil), buckets...)
 }
 
-func (m *s3Metrics) uploadAttrs(attrs ...attribute.KeyValue) []attribute.KeyValue {
+func (m *s3Metrics) uploadAttrs(signal string, attrs ...attribute.KeyValue) []attribute.KeyValue {
 	if m == nil {
 		return nil
 	}
-	result := make([]attribute.KeyValue, 0, 2+len(attrs))
+	result := make([]attribute.KeyValue, 0, 3+len(attrs))
 	result = append(result, attribute.String(attrExporter, m.exporterName))
 	result = append(result, attribute.String(attrBucket, m.bucket))
+	result = append(result, attribute.String(attrSignal, signal))
 	result = append(result, attrs...)
 	return result
 }
 
-func (m *s3Metrics) recordUploadAttempt(ctx context.Context) {
+func (m *s3Metrics) recordUploadAttempt(ctx context.Context, signal string) {
 	if m == nil {
 		return
 	}
-	m.uploadAttempts.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs()...))
+	m.uploadAttempts.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs(signal)...))
 }
 
-func (m *s3Metrics) recordUploadSuccess(ctx context.Context) {
+func (m *s3Metrics) recordUploadSuccess(ctx context.Context, signal string) {
 	if m == nil {
 		return
 	}
-	m.uploadSuccess.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs()...))
+	m.uploadSuccess.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs(signal)...))
 }
 
-func (m *s3Metrics) recordUploadFailure(ctx context.Context, stage, code string, statusCode int) {
+func (m *s3Metrics) recordUploadFailure(ctx context.Context, signal, stage, code string, statusCode int) {
 	if m == nil {
 		return
 	}
@@ -146,37 +152,44 @@ func (m *s3Metrics) recordUploadFailure(ctx context.Context, stage, code string,
 	if statusCode <= 0 {
 		status = "0"
 	}
-	m.uploadFailures.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs(
+	m.uploadFailures.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs(signal,
 		attribute.String(attrStage, stage),
 		attribute.String(attrCode, code),
 		attribute.String(attrStatusCode, status),
 	)...))
 }
 
-func (m *s3Metrics) recordUploadDuration(ctx context.Context, duration time.Duration) {
+func (m *s3Metrics) recordUploadDuration(ctx context.Context, signal string, duration time.Duration) {
 	if m == nil {
 		return
 	}
-	m.uploadDuration.Record(ctx, duration.Seconds(), metric.WithAttributes(m.uploadAttrs()...))
+	m.uploadDuration.Record(ctx, duration.Seconds(), metric.WithAttributes(m.uploadAttrs(signal)...))
 }
 
-func (m *s3Metrics) recordPayloadSize(ctx context.Context, size int) {
+func (m *s3Metrics) recordPayloadSize(ctx context.Context, signal string, size int) {
 	if m == nil {
 		return
 	}
-	m.payloadSize.Record(ctx, int64(size), metric.WithAttributes(m.uploadAttrs()...))
+	m.payloadSize.Record(ctx, int64(size), metric.WithAttributes(m.uploadAttrs(signal)...))
 }
 
 func (m *s3Metrics) recordStartupSuccess(ctx context.Context) {
 	if m == nil {
 		return
 	}
-	m.startupSuccess.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs()...))
+	m.startupSuccess.Add(ctx, 1, metric.WithAttributes(
+		attribute.String(attrExporter, m.exporterName),
+		attribute.String(attrBucket, m.bucket),
+	))
 }
 
 func (m *s3Metrics) recordStartupFailure(ctx context.Context, stage string) {
 	if m == nil {
 		return
 	}
-	m.startupFailures.Add(ctx, 1, metric.WithAttributes(m.uploadAttrs(attribute.String(attrStage, stage))...))
+	m.startupFailures.Add(ctx, 1, metric.WithAttributes(
+		attribute.String(attrExporter, m.exporterName),
+		attribute.String(attrBucket, m.bucket),
+		attribute.String(attrStage, stage),
+	))
 }

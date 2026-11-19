@@ -35,12 +35,12 @@ func TestS3MetricsRecordUploadSuccess(t *testing.T) {
 	require.NoError(t, exp.ConsumeLogs(context.Background(), plog.NewLogs()))
 
 	rm := collectS3Metrics(t, reader)
-	assertCounterValue(t, rm, "s3_exporter_upload_attempts", 1, attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertCounterValue(t, rm, "s3_exporter_upload_successes", 1, attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertAggregationRecorded(t, rm, "s3_exporter_upload_duration", attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertAggregationRecorded(t, rm, "s3_exporter_payload_size", attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertHistogramBounds(t, rm, "s3_exporter_upload_duration", []float64{0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}, attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertHistogramBounds(t, rm, "s3_exporter_payload_size", []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536}, attrExporter, testS3ExporterName, attrBucket, "bucket")
+	assertCounterValue(t, rm, "s3_exporter_upload_attempts", 1, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertCounterValue(t, rm, "s3_exporter_upload_successes", 1, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertAggregationRecorded(t, rm, "s3_exporter_upload_duration", attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertAggregationRecorded(t, rm, "s3_exporter_payload_size", attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertHistogramBounds(t, rm, "s3_exporter_upload_duration", []float64{0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5}, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertHistogramBounds(t, rm, "s3_exporter_payload_size", []float64{128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536}, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
 }
 
 func TestS3MetricsRecordUploadFailureIncludesS3ErrorDetails(t *testing.T) {
@@ -61,8 +61,8 @@ func TestS3MetricsRecordUploadFailureIncludesS3ErrorDetails(t *testing.T) {
 	require.True(t, consumererror.IsPermanent(err))
 
 	rm := collectS3Metrics(t, reader)
-	assertCounterValue(t, rm, "s3_exporter_upload_attempts", 1, attrExporter, testS3ExporterName, attrBucket, "bucket")
-	assertCounterValue(t, rm, "s3_exporter_upload_failures", 1, attrExporter, testS3ExporterName, attrBucket, "bucket", attrStage, stageUpload, attrCode, "AccessDenied", attrStatusCode, "403")
+	assertCounterValue(t, rm, "s3_exporter_upload_attempts", 1, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs)
+	assertCounterValue(t, rm, "s3_exporter_upload_failures", 1, attrExporter, testS3ExporterName, attrBucket, "bucket", attrSignal, signalLogs, attrStage, stageUpload, attrCode, "AccessDenied", attrStatusCode, "403")
 	assertNoMetric(t, rm, "s3_exporter_upload_successes")
 }
 
