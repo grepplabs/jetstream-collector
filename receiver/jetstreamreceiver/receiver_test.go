@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 type testMsg struct {
@@ -20,6 +22,7 @@ type testMsg struct {
 	nacked     bool
 	nakDelay   time.Duration
 	termReason string
+	progress   atomic.Int32
 }
 
 func (m *testMsg) Metadata() (*jetstream.MsgMetadata, error) { return nil, nil }
@@ -35,7 +38,7 @@ func (m *testMsg) NakWithDelay(delay time.Duration) error {
 	m.nakDelay = delay
 	return nil
 }
-func (m *testMsg) InProgress() error                  { return nil }
+func (m *testMsg) InProgress() error                  { m.progress.Add(1); return nil }
 func (m *testMsg) Term() error                        { return nil }
 func (m *testMsg) TermWithReason(reason string) error { m.termReason = reason; return nil }
 
@@ -58,6 +61,27 @@ func TestNormalizeCompression(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestAckProgressIsOptional(t *testing.T) {
+	msg := &testMsg{}
+	r := &jetstreamReceiver{logger: zap.NewNop(), cfg: &Config{}, ackProgress: time.Millisecond}
+	stop := r.startAckProgress(context.Background(), msg)
+	time.Sleep(5 * time.Millisecond)
+	stop()
+	require.Zero(t, msg.progress.Load())
+
+	r.cfg.AckProgress = true
+	stop = r.startAckProgress(context.Background(), msg)
+	deadline := time.After(time.Second)
+	for msg.progress.Load() == 0 {
+		select {
+		case <-deadline:
+			t.Fatal("expected an InProgress call while ack progress is enabled")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	stop()
 }
 
 func TestPayloadCompressionFromHeaders(t *testing.T) {

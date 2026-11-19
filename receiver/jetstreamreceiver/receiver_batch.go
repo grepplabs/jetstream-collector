@@ -64,10 +64,15 @@ func (r *jetstreamReceiver) processBatchOnce(ctx context.Context, consumer jetst
 		zap.Int("size", len(msgs)),
 	)
 
-	for i := range msgs {
-		if err := msgs[i].InProgress(); err != nil {
-			r.logger.Error("failed to mark jetstream message in progress", zap.Error(err))
-			continue
+	stops := make([]func(), 0, len(msgs))
+	defer func() {
+		for i := range stops {
+			stops[i]()
+		}
+	}()
+	if r.cfg.AckProgress {
+		for i := range msgs {
+			stops = append(stops, r.startAckProgress(ctx, msgs[i]))
 		}
 	}
 

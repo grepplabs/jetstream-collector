@@ -1,0 +1,23 @@
+type: s3jetstream
+scope_name: github.com/grepplabs/jetstream-collector/exporter/s3jetstreamexporter
+github_project: grepplabs/jetstream-collector
+
+status:
+  class: exporter
+  stability:
+    alpha: [ logs, metrics, traces, profiles ]
+
+tests:
+  config:
+    s3:
+      endpoint: http://localhost:9000
+      bucket: otlp
+      credentials:
+        access_key_id: minio
+        secret_access_key: minio-secret
+    tenant:
+      id: tenant-1
+    jetstream:
+      url: nats://localhost:4222
+      subject: telemetry.traces
+    signal: traces

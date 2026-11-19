@@ -13,7 +13,7 @@ LOCAL_KUBECONFIG = $(ROOT_DIR)/kubeconfig-$(LOCAL_CLUSTER_NAME)
 
 include ./Makefile.Common
 
-ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver
+ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./exporter/s3jetstreamexporter ./pkg/s3 ./pkg/s3jetstream ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver ./receiver/s3jetstreamreceiver
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
@@ -69,6 +69,16 @@ start-openbao-compose: ## start OpenBao server
 .PHONY: stop-openbao-compose
 stop-openbao-compose: ## stop OpenBao server
 	docker compose -f scripts/openbao-compose/docker-compose.yaml down --volumes
+
+##@ Run SeaweedFS S3 compose
+
+.PHONY: start-seaweedfs-compose
+start-seaweedfs-compose: ## start SeaweedFS S3-compatible server
+	docker compose -f scripts/seaweedfs-compose/docker-compose.yaml up -d --force-recreate --wait
+
+.PHONY: stop-seaweedfs-compose
+stop-seaweedfs-compose: ## stop SeaweedFS S3-compatible server
+	docker compose -f scripts/seaweedfs-compose/docker-compose.yaml down --volumes
 
 ##@ Local cluster
 
@@ -206,7 +216,7 @@ wait-seaweedfs-cluster:
 	kubectl rollout status sts/seaweed-filer -n seaweedfs-cluster --timeout=300s
 
 
-SEAWEEDFS_URL=http://s3.127.0.0.1.nip.io:8333
+SEAWEEDFS_URL=http://s3.seaweed.127.0.0.1.nip.io:8333
 
 seaweedfs-list-s3: AWS_ENV=AWS_EC2_METADATA_DISABLED=true AWS_PAGER="" AWS_ACCESS_KEY_ID=admin AWS_SECRET_ACCESS_KEY=admin123
 seaweedfs-list-s3:

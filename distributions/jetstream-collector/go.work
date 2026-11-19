@@ -4,12 +4,16 @@ use (
 	./dist
 	../../confmap/provider/openbaoprovider
 	../../pkg/jetstream
+	../../pkg/s3
+	../../pkg/s3jetstream
 	../../pkg/template
 	../../exporter/jetstreamexporter
 	../../exporter/s3exporter
+	../../exporter/s3jetstreamexporter
 	../../processor/partitionbyattrsprocessor
 	../../processor/celpartitionprocessor
 	../../processor/clientmetadataselector
 	../../processor/kubemappingprocessor
 	../../receiver/jetstreamreceiver
+	../../receiver/s3jetstreamreceiver
 )
