@@ -1,19 +1,20 @@
-go 1.27.3
+go 1.27.4
 
 use (
 	./dist
 	../../confmap/provider/openbaoprovider
 	../../pkg/jetstream
 	../../pkg/s3
-	../../pkg/s3jetstream
+	../../pkg/s3event
+	../../pkg/payloadresolver
 	../../pkg/template
 	../../exporter/jetstreamexporter
 	../../exporter/s3exporter
-	../../exporter/s3jetstreamexporter
+	../../extension/s3jetstreameventextension
+	../../extension/s3eventresolverextension
 	../../processor/partitionbyattrsprocessor
 	../../processor/celpartitionprocessor
 	../../processor/clientmetadataselector
 	../../processor/kubemappingprocessor
 	../../receiver/jetstreamreceiver
-	../../receiver/s3jetstreamreceiver
 )

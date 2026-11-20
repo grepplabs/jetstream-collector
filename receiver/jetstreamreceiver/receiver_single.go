@@ -2,6 +2,7 @@ package jetstreamreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -50,6 +51,19 @@ func (r *jetstreamReceiver) handleMessage(ctx context.Context, msg jetstream.Msg
 		_ = msg.TermWithReason(reasonInvalidCompressedPayload)
 		r.metrics.recordConsumeFailure(ctx, signal, "decode_payload", subject)
 		return fmt.Errorf("decode jetstream payload: %w", err)
+	}
+	decoded, err = r.resolvePayload(ctx, decoded)
+	if err != nil {
+		if consumererror.IsPermanent(err) {
+			reason, stage := reasonPayloadResolutionError, failureStageResolvePayload
+			if errors.Is(err, errUnsupportedPayloadMediaType) {
+				reason, stage = reasonUnsupportedContentType, failureStageParseContentType
+			}
+			_ = decoded.TermWithReason(reason)
+			r.metrics.recordConsumeFailure(ctx, signal, stage, subject)
+			return fmt.Errorf("resolve jetstream payload: %w", err)
+		}
+		return r.retryOrReturnError(ctx, decoded, signal, "resolve payload", err)
 	}
 	return r.handleDecodedMessage(ctx, decoded)
 }
@@ -168,18 +182,28 @@ func (r *jetstreamReceiver) consumeRetryDelay(msg decodedMessage) time.Duration 
 	}
 }
 
-func unmarshalPayload(req interface {
+type otlpUnmarshaler interface {
 	UnmarshalProto([]byte) error
 	UnmarshalJSON([]byte) error
-}, payload []byte, format string) error {
-	switch format {
-	case sharedjetstream.ContentTypeJSON:
+}
+
+type payloadUnmarshaler func(otlpUnmarshaler, []byte) error
+
+var payloadUnmarshallersByFormat = map[string]payloadUnmarshaler{
+	sharedjetstream.ContentTypeJSON: func(req otlpUnmarshaler, payload []byte) error {
 		return req.UnmarshalJSON(payload)
-	case sharedjetstream.ContentTypeProto:
+	},
+	sharedjetstream.ContentTypeProto: func(req otlpUnmarshaler, payload []byte) error {
 		return req.UnmarshalProto(payload)
-	default:
+	},
+}
+
+func unmarshalPayload(req otlpUnmarshaler, payload []byte, format string) error {
+	unmarshal, ok := payloadUnmarshallersByFormat[format]
+	if !ok {
 		return fmt.Errorf("unsupported payload format %q", format)
 	}
+	return unmarshal(req, payload)
 }
 
 func (r *jetstreamReceiver) buildLogsExportRequest(ctx context.Context, signal string, msg decodedMessage) (*plogotlp.ExportRequest, error) {
