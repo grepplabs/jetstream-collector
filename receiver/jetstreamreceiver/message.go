@@ -172,21 +172,27 @@ func payloadFormatFromHeaders(headers nats.Header) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse content-type %q: %w", ct, err)
 	}
-
-	switch strings.ToLower(mediaType) {
-	case "application/json", "application/x-json", "text/json", "application/*+json":
-		return sharedjetstream.ContentTypeJSON, nil
-	case "application/x-protobuf", "application/protobuf", "application/octet-stream", "application/grpc+proto", "application/*+proto":
-		return sharedjetstream.ContentTypeProto, nil
-	default:
-		if strings.HasSuffix(strings.ToLower(mediaType), "+json") {
-			return sharedjetstream.ContentTypeJSON, nil
-		}
-		if strings.HasSuffix(strings.ToLower(mediaType), "+proto") {
-			return sharedjetstream.ContentTypeProto, nil
-		}
-		return "", fmt.Errorf("unsupported content-type %q", ct)
+	mediaType = strings.ToLower(mediaType)
+	if format, ok := payloadFormatsByMediaType[mediaType]; ok {
+		return format, nil
 	}
+	if strings.HasSuffix(mediaType, "+json") {
+		return sharedjetstream.ContentTypeJSON, nil
+	}
+	if strings.HasSuffix(mediaType, "+proto") {
+		return sharedjetstream.ContentTypeProto, nil
+	}
+	return "", fmt.Errorf("unsupported content-type %q", ct)
+}
+
+var payloadFormatsByMediaType = map[string]string{
+	"application/json":         sharedjetstream.ContentTypeJSON,
+	"application/x-json":       sharedjetstream.ContentTypeJSON,
+	"text/json":                sharedjetstream.ContentTypeJSON,
+	"application/x-protobuf":   sharedjetstream.ContentTypeProto,
+	"application/protobuf":     sharedjetstream.ContentTypeProto,
+	"application/octet-stream": sharedjetstream.ContentTypeProto,
+	"application/grpc+proto":   sharedjetstream.ContentTypeProto,
 }
 
 func headerValue(headers nats.Header, key string) string {

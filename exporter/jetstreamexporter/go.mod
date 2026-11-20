@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter
 
-go 1.27.3
+go 1.27.4
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 
@@ -9,7 +9,7 @@ replace github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jets
 require (
 	github.com/grepplabs/jetstream-collector/pkg/jetstream v0.0.0
 	github.com/grepplabs/jetstream-collector/pkg/template v0.0.0
-	github.com/nats-io/nats.go v1.55.0
+	github.com/nats-io/nats.go v1.56.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.71.0
 	go.opentelemetry.io/collector/component v1.71.0

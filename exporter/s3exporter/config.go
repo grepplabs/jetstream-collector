@@ -31,6 +31,10 @@ type MetricsBucketsConfig struct {
 	PayloadSize    []float64 `mapstructure:"payload_size"`
 }
 
+type NotificationConfig struct {
+	Target component.ID `mapstructure:"target"`
+}
+
 type Config struct {
 	Endpoint           string                                                   `mapstructure:"endpoint"`
 	Region             string                                                   `mapstructure:"region"`
@@ -44,6 +48,7 @@ type Config struct {
 	MarshalerType      string                                                   `mapstructure:"marshaler"`
 	Compression        string                                                   `mapstructure:"compression"`
 	MetricsBuckets     MetricsBucketsConfig                                     `mapstructure:"metrics_buckets"`
+	Notification       NotificationConfig                                       `mapstructure:"notification"`
 	TimeoutSettings    exporterhelper.TimeoutConfig                             `mapstructure:",squash"`
 	RetryOnFailure     configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 	SendingQueue       configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
@@ -126,6 +131,9 @@ func (c *Config) Validate() error {
 	var errs error
 	if c.Bucket == "" {
 		errs = errors.Join(errs, errors.New("bucket is required"))
+	}
+	if c.Notification.Target != (component.ID{}) && c.Notification.Target.Type() == (component.Type{}) {
+		errs = errors.Join(errs, errors.New("notification.target must include an extension type"))
 	}
 
 	if c.Credentials.AccessKeyID == "" && c.Credentials.SecretAccessKey == "" && c.Credentials.Provider == (component.ID{}) {

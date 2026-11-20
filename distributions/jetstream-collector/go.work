@@ -1,4 +1,4 @@
-go 1.27.3
+go 1.27.4
 
 use (
 	./dist
@@ -6,10 +6,11 @@ use (
 	../../pkg/jetstream
 	../../pkg/s3
 	../../pkg/s3jetstream
+	../../pkg/s3event
 	../../pkg/template
 	../../exporter/jetstreamexporter
 	../../exporter/s3exporter
-	../../exporter/s3jetstreamexporter
+	../../extension/s3jetstreameventextension
 	../../processor/partitionbyattrsprocessor
 	../../processor/celpartitionprocessor
 	../../processor/clientmetadataselector

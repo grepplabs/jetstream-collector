@@ -3,6 +3,8 @@ package s3exporter
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	s3client "github.com/grepplabs/jetstream-collector/pkg/s3"
+	"github.com/grepplabs/jetstream-collector/pkg/s3event"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -59,14 +62,16 @@ func marshalOTLP(req otlpRequest, contentType string) ([]byte, error) {
 
 type s3Exporter struct {
 	logger           *zap.Logger
+	id               component.ID
 	cfg              *Config
 	filenameTemplate *keyPrefixTemplate
 	metrics          *s3Metrics
 
-	mu      sync.Mutex
-	client  objectPutter
-	s3Close func()
-	started bool
+	mu       sync.Mutex
+	client   objectPutter
+	notifier s3event.Notifier
+	s3Close  func()
+	started  bool
 }
 
 func newExporter(set exporter.Settings, cfg *Config) (*s3Exporter, error) {
@@ -88,6 +93,7 @@ func newExporter(set exporter.Settings, cfg *Config) (*s3Exporter, error) {
 
 	return &s3Exporter{
 		logger:           logger,
+		id:               set.ID,
 		cfg:              cfg,
 		filenameTemplate: filenameTemplate,
 		metrics:          metrics,
@@ -100,6 +106,20 @@ func (e *s3Exporter) Start(ctx context.Context, host component.Host) error {
 	if e.started {
 		return nil
 	}
+	var notifier s3event.Notifier
+	if target := e.cfg.Notification.Target; target != (component.ID{}) {
+		if host == nil {
+			return fmt.Errorf("notification target %q unavailable: component host is nil", target)
+		}
+		ext, ok := host.GetExtensions()[target]
+		if !ok {
+			return fmt.Errorf("unknown notification target extension %q", target)
+		}
+		notifier, ok = ext.(s3event.Notifier)
+		if !ok {
+			return fmt.Errorf("notification target extension %q does not implement s3event.Notifier", target)
+		}
+	}
 
 	client, closeS3, err := e.connect(ctx, host)
 	if err != nil {
@@ -108,6 +128,7 @@ func (e *s3Exporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	e.client = client
+	e.notifier = notifier
 	e.s3Close = closeS3
 	e.started = true
 	e.metrics.recordStartupSuccess(ctx)
@@ -124,6 +145,7 @@ func (e *s3Exporter) Shutdown(_ context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.client = nil
+	e.notifier = nil
 	if e.s3Close != nil {
 		e.s3Close()
 		e.s3Close = nil
@@ -189,6 +211,7 @@ func (e *s3Exporter) consume(ctx context.Context, signal string, resolver KeyPre
 func (e *s3Exporter) upload(ctx context.Context, signal, objectName string, payload []byte) error {
 	e.mu.Lock()
 	client := e.client
+	notifier := e.notifier
 	e.mu.Unlock()
 	if client == nil {
 		e.metrics.recordUploadFailure(ctx, signal, stageUpload, "unknown", 0)
@@ -230,6 +253,27 @@ func (e *s3Exporter) upload(ctx context.Context, signal, objectName string, payl
 		zap.String("key", objectName),
 		zap.Int("payload_size", len(payload)),
 	)
+	if notifier != nil {
+		uploadedAt := time.Now().UTC()
+		payloadHash := sha256.Sum256(payload)
+		event, err := s3event.NewObjectCreated("urn:opentelemetry:exporter:"+e.id.String(), e.cfg.Bucket, objectName, s3event.ObjectReference{
+			Bucket:          e.cfg.Bucket,
+			Key:             objectName,
+			Signal:          signal,
+			API:             "PutObject",
+			ContentType:     contentType,
+			ContentEncoding: contentEncoding,
+			Size:            int64(len(payload)),
+			SHA256:          hex.EncodeToString(payloadHash[:]),
+			UploadedAt:      uploadedAt,
+		})
+		if err != nil {
+			return fmt.Errorf("create S3 object notification: %w", err)
+		}
+		if err := notifier.Notify(ctx, event); err != nil {
+			return fmt.Errorf("notify target after S3 upload bucket=%q key=%q: %w", e.cfg.Bucket, objectName, err)
+		}
+	}
 	return nil
 }
 

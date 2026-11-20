@@ -1,0 +1,68 @@
+extensions:
+  jetstreams3event/events:
+    url: nats://127.0.0.1:4222
+    subject: s3.object.created
+    msg_id: true
+    bootstrap:
+      stream:
+        name: S3_EVENTS
+        subjects: [ s3.object.created ]
+
+exporters:
+  s3/store:
+    marshaler: proto
+    region: eu-central-1
+    bucket: otlp
+    endpoint: http://127.0.0.1:8333
+    secure: false
+    force_path_style: true
+    compression: gzip
+    filename_template: "jetstream-collector/"
+    filename_append_uuid: true
+    notification:
+      target: jetstreams3event/events
+    credentials:
+      access_key_id: admin
+      secret_access_key: admin123
+
+    timeout: 10s
+    sending_queue:
+      enabled: false
+
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 30s
+
+
+receivers:
+  otlp/input:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+      http:
+        endpoint: 127.0.0.1:4318
+
+service:
+  extensions:
+    - jetstreams3event/events
+  pipelines:
+    logs:
+      receivers:
+        - otlp/input
+      exporters:
+        - s3/store
+
+  telemetry:
+    resource:
+      service.name: jetstream-collector
+      service.version: "0.0.0-test"
+    logs:
+      level: debug
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

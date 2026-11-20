@@ -7,6 +7,16 @@ It marshals each exported signal batch, optionally compresses the payload, and u
 ## Configuration
 
 ```yaml
+extensions:
+  jetstreams3event/events:
+    url: nats://127.0.0.1:4222
+    subject: s3.object.created
+    msg_id: true
+    bootstrap:
+      stream:
+        name: S3_EVENTS
+        subjects: [s3.object.created]
+
 exporters:
   s3:
     bucket: jetstream-logs
@@ -22,6 +32,8 @@ exporters:
     filename_extension: log
     marshaler: proto
     compression: gzip
+    notification:
+      target: jetstreams3event/events
     metrics_buckets:
       upload_duration: [0.001, 0.01, 0.1, 1, 5]
       payload_size: [128, 1024, 8192, 65536]
@@ -31,6 +43,9 @@ exporters:
     sending_queue:
       enabled: true
       queue_size: 1000
+
+service:
+  extensions: [jetstreams3event/events]
 ```
 
 ## Top-Level Fields
@@ -49,6 +64,15 @@ exporters:
 - `timeout`: Export timeout used by the collector exporter helper.
 - `retry_on_failure`: Standard collector retry configuration.
 - `sending_queue`: Standard collector exporter queue configuration.
+- `notification.target`: Optional Collector extension ID implementing `pkg/s3event.Notifier`. The exporter sends a CloudEvent after each successful S3 upload.
+
+## Upload Notifications
+
+The notification is a CloudEvents 1.0 event with type `com.grepplabs.s3.object.created.v1`. Its data contains a reference to the stored object, including bucket, key, signal, content type, compression, byte size, and an optional SHA-256 digest of the stored bytes. The telemetry payload is not included. The event ID is stable for the same bucket and key so consumers can deduplicate retries.
+
+The configured target is resolved from Collector extensions at startup. The `jetstreams3event` extension publishes structured CloudEvents to JetStream and waits for a publish acknowledgement. Configure its URL, subject, TLS, authentication, and optional `bootstrap.stream`. Notification errors fail the export after the S3 PUT; Collector retries can therefore repeat the upload. With `msg_id: true`, JetStream uses the stable CloudEvent ID for duplicate suppression within the stream's duplicate window. When no notification target is configured, uploads work as before.
+
+The extension also accepts `timeout` (default `5s`), `headers`, `connection.domain`, `tls`, and `auth`. The structured CloudEvent uses `application/cloudevents+json` as the NATS message content type. Add the configured publish subject to the bootstrapped stream's `subjects`.
 
 ## Credentials
 

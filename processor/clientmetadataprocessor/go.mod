@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/processor/clientmetadataprocessor
 
-go 1.27.3
+go 1.27.4
 
 replace github.com/grepplabs/jetstream-collector/pkg/template => ../../pkg/template
 

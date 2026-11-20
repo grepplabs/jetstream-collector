@@ -24,6 +24,12 @@ The repository is organized into these areas:
 | `jetstream` | Publishes OTLP logs, metrics, traces, or profiles as JetStream messages on a target subject. | [jetstreamexporter](exporter/jetstreamexporter/README.md) |
 | `s3` | Stores OTLP logs in S3-compatible object storage. | [s3exporter](exporter/s3exporter/README.md) |
 
+### Extensions
+
+| Component | Purpose |
+| --- | --- |
+| `jetstreams3event/events` | Notification target for S3 object-created CloudEvents emitted by `s3exporter`. |
+
 ### Processors
 
 | Component | Purpose | Docs |
