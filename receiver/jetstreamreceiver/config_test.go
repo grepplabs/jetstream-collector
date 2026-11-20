@@ -6,6 +6,7 @@ import (
 
 	sharedjetstream "github.com/grepplabs/jetstream-collector/pkg/jetstream"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -58,6 +59,7 @@ func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 		"connection": map[string]any{
 			"domain": "HUB",
 		},
+		"resolvers": []any{"s3eventresolver/east"},
 	})
 
 	require.NoError(t, conf.Unmarshal(cfg))
@@ -68,6 +70,7 @@ func TestConfigBucketsPartialUnmarshal(t *testing.T) {
 	require.Equal(t, sharedjetstream.TLSConfig{}, cfg.TLS)
 	require.Equal(t, sharedjetstream.AuthConfig{}, cfg.Auth)
 	require.Equal(t, "HUB", cfg.Connection.Domain)
+	require.Equal(t, []component.ID{component.MustNewIDWithName("s3eventresolver", "east")}, cfg.Resolvers)
 }
 
 func TestConfigValidate(t *testing.T) {

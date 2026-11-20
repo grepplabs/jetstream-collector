@@ -9,8 +9,6 @@ excludes:
   - google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 
 receivers:
-  - gomod: github.com/grepplabs/jetstream-collector/receiver/s3jetstreamreceiver v0.0.0
-    path: ../../receiver/s3jetstreamreceiver
   - gomod: github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver v0.0.0
     path: ../../receiver/jetstreamreceiver
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.165.0
@@ -39,8 +37,6 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.165.0
 
 exporters:
-  - gomod: github.com/grepplabs/jetstream-collector/exporter/s3jetstreamexporter v0.0.0
-    path: ../../exporter/s3jetstreamexporter
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.165.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.165.0
   - gomod: github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
@@ -56,6 +52,8 @@ replaces:
   - github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../../pkg/jetstream
   - github.com/grepplabs/jetstream-collector/pkg/s3 => ../../../pkg/s3
   - github.com/grepplabs/jetstream-collector/pkg/s3jetstream => ../../../pkg/s3jetstream
+  - github.com/grepplabs/jetstream-collector/pkg/s3event => ../../../pkg/s3event
+  - github.com/grepplabs/jetstream-collector/pkg/payloadresolver => ../../../pkg/payloadresolver
   - github.com/grepplabs/jetstream-collector/pkg/template => ../../../pkg/template
 
 providers:
@@ -68,6 +66,10 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.71.0
 
 extensions:
+  - gomod: github.com/grepplabs/jetstream-collector/extension/s3jetstreameventextension v0.0.0
+    path: ../../extension/s3jetstreameventextension
+  - gomod: github.com/grepplabs/jetstream-collector/extension/s3eventresolverextension v0.0.0
+    path: ../../extension/s3eventresolverextension
   - gomod: github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/badgerextension v1.3.0
   - gomod: github.com/dynatrace/dynatrace-bindplane-otel-contrib/extension/pebbleextension v1.3.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.165.0

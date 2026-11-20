@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-ENDPOINT=localhost:30418
-#ENDPOINT=localhost:4318
+#ENDPOINT=localhost:30418
+ENDPOINT=localhost:4318
 
 # link
 #    - name: link-project-04b557a7-c849-494f-bfe9-4c13b9e7aea0

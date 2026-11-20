@@ -1,6 +1,6 @@
 module github.com/grepplabs/jetstream-collector/pkg/template
 
-go 1.27.3
+go 1.27.4
 
 require (
 	go.opentelemetry.io/collector/client v1.71.0

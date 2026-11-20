@@ -49,8 +49,10 @@ $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 .PHONY: test
+ifneq ($(MAKEFILE_COMMON_SKIP_TEST),1)
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
+endif
 
 .PHONY: integration-test
 integration-test:

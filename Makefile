@@ -11,9 +11,10 @@ LOCAL_CLUSTER_NAME = jetstream-collector
 LOCAL_KIND_CONFIG = $(ROOT_DIR)/kind-config-$(LOCAL_CLUSTER_NAME).yaml
 LOCAL_KUBECONFIG = $(ROOT_DIR)/kubeconfig-$(LOCAL_CLUSTER_NAME)
 
+MAKEFILE_COMMON_SKIP_TEST := 1
 include ./Makefile.Common
 
-ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./exporter/s3jetstreamexporter ./pkg/s3 ./pkg/s3jetstream ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver ./receiver/s3jetstreamreceiver
+ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./extension/s3jetstreameventextension ./extension/s3eventresolverextension ./pkg/s3 ./pkg/s3event ./pkg/payloadresolver ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 

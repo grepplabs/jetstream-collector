@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sharedjetstream "github.com/grepplabs/jetstream-collector/pkg/jetstream"
+	"github.com/grepplabs/jetstream-collector/pkg/payloadresolver"
 	"github.com/nats-io/nats.go/jetstream"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -35,6 +36,7 @@ const (
 	reasonInvalidProfilesPayload   = "invalid otlp profiles payload"
 	reasonUnsupportedPayloadKind   = "unsupported payload kind"
 	reasonPermanentConsumerError   = "permanent consumer error"
+	reasonPayloadResolutionError   = "payload resolution error"
 )
 
 var _ receiver.Logs = (*jetstreamReceiver)(nil)
@@ -43,10 +45,11 @@ var _ receiver.Traces = (*jetstreamReceiver)(nil)
 var _ xreceiver.Profiles = (*jetstreamReceiver)(nil)
 
 type jetstreamReceiver struct {
-	logger  *zap.Logger
-	cfg     *Config
-	kind    payloadKind
-	metrics *jetstreamMetrics
+	logger    *zap.Logger
+	cfg       *Config
+	kind      payloadKind
+	metrics   *jetstreamMetrics
+	resolvers map[string]payloadresolver.Resolver
 
 	nextLogs     consumer.Logs
 	nextMetrics  consumer.Metrics
@@ -106,6 +109,7 @@ func newReceiver(set receiver.Settings, cfg *Config, kind payloadKind, logs cons
 		cfg:          cfg,
 		kind:         kind,
 		metrics:      jm,
+		resolvers:    map[string]payloadresolver.Resolver{},
 		nextLogs:     logs,
 		nextMetrics:  metrics,
 		nextTraces:   traces,
@@ -113,12 +117,19 @@ func newReceiver(set receiver.Settings, cfg *Config, kind payloadKind, logs cons
 	}, nil
 }
 
-func (r *jetstreamReceiver) Start(ctx context.Context, _ component.Host) error {
+func (r *jetstreamReceiver) Start(ctx context.Context, host component.Host) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.started {
 		return nil
 	}
+
+	resolvers, err := buildResolverRegistry(host, r.cfg.Resolvers)
+	if err != nil {
+		r.metrics.recordStartupFailure(ctx, stageResolverRegistry)
+		return fmt.Errorf("build payload resolver registry: %w", err)
+	}
+	r.resolvers = resolvers
 
 	js, err := r.connect()
 	if err != nil {

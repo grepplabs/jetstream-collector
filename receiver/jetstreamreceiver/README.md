@@ -10,6 +10,7 @@ receivers:
     stream: otel_logs
     subject: otel.logs
     consumer_name: jetstream-dev
+    resolvers: [s3eventresolver]
     processing_mode: single
     workers: 0
     batch_max_messages: 16
@@ -57,6 +58,7 @@ receivers:
 - `metrics_buckets.payload_size`: Bucket boundaries for `jetstream_receiver_payload_size` and `jetstream_receiver_batch_size`. If omitted, the current defaults are used.
 - `batch_group_by_subject`: When enabled in batch mode, decoded messages are grouped by subject before downstream processing. Default: `false`.
 - `include_subject`: When enabled, consume-side custom metrics add a `subject` attribute. Default: `false`.
+- `resolvers`: Optional list of extension IDs that provide payload resolvers for this receiver. Only the listed extensions are used by this receiver. Each ID must refer to an extension configured and enabled under `service.extensions` that implements the payload resolver contract.
 - `compression`: Default payload compression when `Content-Encoding` is missing. Supported values: `none`, `identity`, `gzip`. Default: `none`.
 - `consume_retry`: Optional retry policy. See the `consume_retry` section below.
 - `connection`: Optional NATS/JetStream connection settings. See the `connection` section below.

@@ -6,6 +6,7 @@ The repository is organized into these areas:
 
 - Receivers that read OTLP export requests from JetStream and feed them into a collector pipeline.
 - Exporters that publish OTLP export requests to JetStream or persist data to object storage.
+- Extensions that publish S3 object notifications and resolve S3 object references from CloudEvents.
 - Processors that reshape or enrich telemetry before it reaches an exporter.
 - Confmap providers that load Collector configuration from external backends such as OpenBao.
 
@@ -23,6 +24,13 @@ The repository is organized into these areas:
 | --- | --- | --- |
 | `jetstream` | Publishes OTLP logs, metrics, traces, or profiles as JetStream messages on a target subject. | [jetstreamexporter](exporter/jetstreamexporter/README.md) |
 | `s3` | Stores OTLP logs in S3-compatible object storage. | [s3exporter](exporter/s3exporter/README.md) |
+
+### Extensions
+
+| Component | Purpose | Docs |
+| --- | --- | --- |
+| `jetstreams3event` | Publishes S3 object-created CloudEvents from `s3exporter` to JetStream. | [s3jetstreameventextension](extension/s3jetstreameventextension/README.md) |
+| `s3eventresolver` | Resolves S3 object-reference CloudEvents into OTLP payloads for a JetStream receiver. Select the extension per receiver with its `resolvers` setting. | [s3eventresolverextension](extension/s3eventresolverextension/README.md) |
 
 ### Processors
 

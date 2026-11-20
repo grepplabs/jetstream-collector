@@ -163,30 +163,37 @@ func gunzipPayload(body []byte) ([]byte, error) {
 }
 
 func payloadFormatFromHeaders(headers nats.Header) (string, error) {
+	mediaType, err := payloadMediaTypeFromHeaders(headers)
+	if err != nil {
+		return "", err
+	}
+	mediaType = strings.ToLower(mediaType)
+	if format, ok := payloadFormatsByMediaType[mediaType]; ok {
+		return format, nil
+	}
+	return "", fmt.Errorf("unsupported content-type %q", mediaType)
+}
+
+func payloadMediaTypeFromHeaders(headers nats.Header) (string, error) {
 	ct := headerValue(headers, sharedjetstream.HeaderContentType)
 	if ct == "" {
-		return sharedjetstream.ContentTypeProto, nil
+		return sharedjetstream.MIMEContentTypeProto, nil
 	}
-
 	mediaType, _, err := mime.ParseMediaType(ct)
 	if err != nil {
 		return "", fmt.Errorf("parse content-type %q: %w", ct, err)
 	}
+	return strings.ToLower(mediaType), nil
+}
 
-	switch strings.ToLower(mediaType) {
-	case "application/json", "application/x-json", "text/json", "application/*+json":
-		return sharedjetstream.ContentTypeJSON, nil
-	case "application/x-protobuf", "application/protobuf", "application/octet-stream", "application/grpc+proto", "application/*+proto":
-		return sharedjetstream.ContentTypeProto, nil
-	default:
-		if strings.HasSuffix(strings.ToLower(mediaType), "+json") {
-			return sharedjetstream.ContentTypeJSON, nil
-		}
-		if strings.HasSuffix(strings.ToLower(mediaType), "+proto") {
-			return sharedjetstream.ContentTypeProto, nil
-		}
-		return "", fmt.Errorf("unsupported content-type %q", ct)
-	}
+var payloadFormatsByMediaType = map[string]string{
+	"application/json":         sharedjetstream.ContentTypeJSON,
+	"application/x-json":       sharedjetstream.ContentTypeJSON,
+	"text/json":                sharedjetstream.ContentTypeJSON,
+	"application/x-protobuf":   sharedjetstream.ContentTypeProto,
+	"application/protobuf":     sharedjetstream.ContentTypeProto,
+	"application/octet-stream": sharedjetstream.ContentTypeProto,
+	"application/grpc+proto":   sharedjetstream.ContentTypeProto,
 }
 
 func headerValue(headers nats.Header, key string) string {

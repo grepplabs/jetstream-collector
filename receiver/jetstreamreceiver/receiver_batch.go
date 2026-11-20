@@ -110,6 +110,21 @@ func (r *jetstreamReceiver) handleMessages(ctx context.Context, msgs []jetstream
 			r.metrics.recordBatchDropped(ctx, signal, 1)
 			continue
 		}
+		msg, err = r.resolvePayload(ctx, msg)
+		if err != nil {
+			if consumererror.IsPermanent(err) {
+				reason, stage := reasonPayloadResolutionError, failureStageResolvePayload
+				if errors.Is(err, errUnsupportedPayloadMediaType) {
+					reason, stage = reasonUnsupportedContentType, failureStageParseContentType
+				}
+				_ = msgs[i].TermWithReason(reason)
+				r.metrics.recordConsumeFailure(ctx, signal, stage, msgs[i].Subject())
+			} else if retryErr := r.retryOrReturnError(ctx, msg, signal, "resolve payload", err); retryErr != nil {
+				return retryErr
+			}
+			r.metrics.recordBatchDropped(ctx, signal, 1)
+			continue
+		}
 		decoded = append(decoded, msg)
 	}
 

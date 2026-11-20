@@ -1,10 +1,11 @@
 module github.com/grepplabs/jetstream-collector/receiver/jetstreamreceiver
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/grepplabs/jetstream-collector/pkg/jetstream v0.0.0
-	github.com/nats-io/nats.go v1.55.0
+	github.com/grepplabs/jetstream-collector/pkg/payloadresolver v0.0.0
+	github.com/nats-io/nats.go v1.56.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.71.0
 	go.opentelemetry.io/collector/component v1.71.0
@@ -27,6 +28,8 @@ require (
 )
 
 replace github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jetstream
+
+replace github.com/grepplabs/jetstream-collector/pkg/payloadresolver => ../../pkg/payloadresolver
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

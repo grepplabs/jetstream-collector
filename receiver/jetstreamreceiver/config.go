@@ -51,6 +51,7 @@ type Config struct {
 	Compression         string                           `mapstructure:"compression"`
 	ConsumeRetry        ConsumeRetryConfig               `mapstructure:"consume_retry"`
 	MetricsBuckets      MetricsBucketsConfig             `mapstructure:"metrics_buckets"`
+	Resolvers           []component.ID                   `mapstructure:"resolvers"`
 	Bootstrap           sharedjetstream.BootstrapConfig  `mapstructure:"bootstrap"`
 	Connection          sharedjetstream.ConnectionConfig `mapstructure:"connection"`
 	TLS                 sharedjetstream.TLSConfig        `mapstructure:"tls"`
@@ -161,6 +162,16 @@ func (cfg *Config) Validate() error {
 	}
 	if _, err := cfg.consumerName(); err != nil {
 		return err
+	}
+	resolverIDs := make(map[component.ID]struct{}, len(cfg.Resolvers))
+	for _, id := range cfg.Resolvers {
+		if id.Type() == (component.Type{}) {
+			return fmt.Errorf("resolvers entries must include an extension type")
+		}
+		if _, exists := resolverIDs[id]; exists {
+			return fmt.Errorf("duplicate resolver extension %q", id)
+		}
+		resolverIDs[id] = struct{}{}
 	}
 
 	mode := cfg.processingMode()

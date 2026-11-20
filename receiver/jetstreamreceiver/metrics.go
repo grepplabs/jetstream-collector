@@ -32,6 +32,7 @@ const (
 	failureStageConsumePermanent = "consume_permanent"
 	failureStageUnmarshal        = "unmarshal"
 	failureStageParseContentType = "parse_content_type"
+	failureStageResolvePayload   = "resolve_payload"
 	failureStageUnsupportedKind  = "unsupported_kind"
 	failureStageAck              = "ack"
 
@@ -42,6 +43,7 @@ const (
 	stageConsumerName       = "consumer_name"
 	stageLookupConsumer     = "lookup_consumer"
 	stageStartConsumer      = "start_consumer"
+	stageResolverRegistry   = "resolver_registry"
 
 	batchStageConsume = "consume"
 )
