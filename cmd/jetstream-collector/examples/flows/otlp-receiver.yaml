@@ -1,0 +1,20 @@
+apiVersion: telemetry.grepplabs.io/v1alpha1
+kind: TelemetryFlow
+metadata:
+  name: shared-otlp-receiver
+  namespace: observability
+  labels:
+    telemetry.grepplabs.io/collector: production
+spec:
+  config:
+    receivers:
+      otlp/shared:
+        protocols:
+          grpc:
+            endpoint: 127.0.0.1:14317
+          http:
+            endpoint: 127.0.0.1:14318
+    processors: {}
+    exporters: {}
+    service:
+      pipelines: {}

@@ -2,6 +2,7 @@ go 1.27.4
 
 use (
 	./dist
+	../../api/telemetryflow
 	../../confmap/provider/openbaoprovider
 	../../pkg/jetstream
 	../../pkg/s3
@@ -12,6 +13,7 @@ use (
 	../../exporter/s3exporter
 	../../extension/s3jetstreameventextension
 	../../extension/s3eventresolverextension
+	../../extension/flowmanagerextension
 	../../processor/partitionbyattrsprocessor
 	../../processor/celpartitionprocessor
 	../../processor/clientmetadataselector

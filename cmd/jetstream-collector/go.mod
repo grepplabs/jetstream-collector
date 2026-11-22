@@ -3,9 +3,11 @@ module github.com/grepplabs/jetstream-collector/cmd/jetstream-collector
 go 1.27.4
 
 replace (
+	github.com/grepplabs/jetstream-collector/api/telemetryflow => ../../api/telemetryflow
 	github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider => ../../confmap/provider/openbaoprovider
 	github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter => ../../exporter/jetstreamexporter
 	github.com/grepplabs/jetstream-collector/exporter/s3exporter => ../../exporter/s3exporter
+	github.com/grepplabs/jetstream-collector/extension/flowmanagerextension => ../../extension/flowmanagerextension
 	github.com/grepplabs/jetstream-collector/extension/s3eventresolverextension => ../../extension/s3eventresolverextension
 	github.com/grepplabs/jetstream-collector/extension/s3jetstreameventextension => ../../extension/s3jetstreameventextension
 	github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../pkg/jetstream
@@ -29,6 +31,7 @@ require (
 	github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider v0.0.0
 	github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter v0.0.0
 	github.com/grepplabs/jetstream-collector/exporter/s3exporter v0.0.0
+	github.com/grepplabs/jetstream-collector/extension/flowmanagerextension v0.0.0
 	github.com/grepplabs/jetstream-collector/extension/s3eventresolverextension v0.0.0
 	github.com/grepplabs/jetstream-collector/extension/s3jetstreameventextension v0.0.0
 	github.com/grepplabs/jetstream-collector/processor/celpartitionprocessor v0.0.0
@@ -164,6 +167,7 @@ require (
 	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
+	github.com/grepplabs/jetstream-collector/api/telemetryflow v0.0.0 // indirect
 	github.com/grepplabs/jetstream-collector/pkg/jetstream v0.0.0 // indirect
 	github.com/grepplabs/jetstream-collector/pkg/payloadresolver v0.0.0 // indirect
 	github.com/grepplabs/jetstream-collector/pkg/s3 v0.0.0 // indirect

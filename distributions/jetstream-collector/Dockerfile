@@ -10,6 +10,7 @@ ARG TARGETARCH
 WORKDIR /build
 
 COPY distributions distributions
+COPY api api
 COPY exporter exporter
 COPY extension extension
 COPY internal internal

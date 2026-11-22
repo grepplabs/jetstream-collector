@@ -10,11 +10,12 @@ LOCAL_CLUSTER_ROOT_DIR = $(LOCAL_SCRIPTS_DIR)/local-cluster
 LOCAL_CLUSTER_NAME = jetstream-collector
 LOCAL_KIND_CONFIG = $(ROOT_DIR)/kind-config-$(LOCAL_CLUSTER_NAME).yaml
 LOCAL_KUBECONFIG = $(ROOT_DIR)/kubeconfig-$(LOCAL_CLUSTER_NAME)
+LOCAL_APPLY_ALL_CLUSTER_RESOURCES ?= false
 
 MAKEFILE_COMMON_SKIP_TEST := 1
 include ./Makefile.Common
 
-ALL_MODULES := ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./extension/s3jetstreameventextension ./extension/s3eventresolverextension ./pkg/s3 ./pkg/s3event ./pkg/payloadresolver ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver
+ALL_MODULES := ./api/telemetryflow ./confmap/provider/openbaoprovider ./exporter/jetstreamexporter ./exporter/s3exporter ./extension/s3jetstreameventextension ./extension/s3eventresolverextension ./extension/flowmanagerextension ./pkg/s3 ./pkg/s3event ./pkg/payloadresolver ./processor/clientmetadataprocessor ./processor/clientmetadataselector ./processor/partitionbyattrsprocessor ./processor/celpartitionprocessor ./receiver/jetstreamreceiver
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
@@ -103,7 +104,7 @@ local-apply: export KUBECONFIG=$(LOCAL_KUBECONFIG)
 local-apply:
 	kind load docker-image --name ${LOCAL_CLUSTER_NAME} $(LOCAL_IMAGE)
 	@echo "install crds"
-	kubectl kustomize $(LOCAL_SCRIPTS_DIR)/crds --enable-helm | kubectl apply --server-side=true -f -
+	kubectl kustomize $(LOCAL_SCRIPTS_DIR)/crds --enable-helm --load-restrictor LoadRestrictionsNone | kubectl apply --server-side=true -f -
 
 	@echo "install cert-manager"
 	kubectl kustomize $(LOCAL_SCRIPTS_DIR)/cert-manager --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
@@ -128,6 +129,15 @@ local-apply:
 	kubectl kustomize $(LOCAL_SCRIPTS_DIR)/opentelemetry-operator --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
 	kubectl wait --for=condition=available deployment --all -A --timeout=300s
 
+ifeq ($(LOCAL_APPLY_ALL_CLUSTER_RESOURCES),true)
+	$(MAKE) local-apply-all-cluster-resources
+else
+	@echo "Skipping all cluster resources (set LOCAL_APPLY_ALL_CLUSTER_RESOURCES=true to enable)"
+endif
+
+.PHONY: local-apply-all-cluster-resources
+local-apply-all-cluster-resources: export KUBECONFIG=$(LOCAL_KUBECONFIG)
+local-apply-all-cluster-resources:
 	@echo "all cluster resources"
 	kubectl kustomize $(LOCAL_CLUSTER_ROOT_DIR) --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
 	$(MAKE) create-secrets

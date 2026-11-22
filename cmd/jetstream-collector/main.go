@@ -10,6 +10,7 @@ import (
 	"github.com/grepplabs/jetstream-collector/confmap/provider/openbaoprovider"
 	"github.com/grepplabs/jetstream-collector/exporter/jetstreamexporter"
 	"github.com/grepplabs/jetstream-collector/exporter/s3exporter"
+	"github.com/grepplabs/jetstream-collector/extension/flowmanagerextension"
 	"github.com/grepplabs/jetstream-collector/extension/s3eventresolverextension"
 	"github.com/grepplabs/jetstream-collector/extension/s3jetstreameventextension"
 	"github.com/grepplabs/jetstream-collector/processor/celpartitionprocessor"
@@ -94,6 +95,7 @@ func main() {
 					component.MustNewType("routing"): routingconnector.NewFactory(),
 				},
 				Extensions: map[component.Type]extension.Factory{
+					component.MustNewType("flowmanager"):            flowmanagerextension.NewFactory(),
 					component.MustNewType("jetstreams3event"):       s3jetstreameventextension.NewFactory(),
 					component.MustNewType("s3eventresolver"):        s3eventresolverextension.NewFactory(),
 					component.MustNewType("badger"):                 badgerextension.NewFactory(),

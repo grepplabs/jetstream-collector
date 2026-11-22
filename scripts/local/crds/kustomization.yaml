@@ -6,4 +6,5 @@ resources:
   - https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.92.0/stripped-down-crds.yaml
   - https://raw.githubusercontent.com/nats-io/k8s/nack-0.34.0/helm/charts/nack/crds/crds.yml
   - https://raw.githubusercontent.com/open-telemetry/opentelemetry-operator/v0.155.0/bundle/community/manifests/opentelemetry.io_opentelemetrycollectors.yaml
+  - ../../../api/telemetryflow/config/crd/bases/telemetry.grepplabs.io_telemetryflows.yaml
   - link-crd.yaml

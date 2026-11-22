@@ -1,0 +1,86 @@
+version: '3'
+
+tasks:
+  flow:envtest:install:
+    desc: Install Kubernetes API server assets for flow manager integration tests
+    cmds:
+      - go run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.25 use 1.37.x!
+
+  flow:fmt:
+    desc: Format the dynamic API and flow manager Go code
+    cmds:
+      - gofmt -w api/telemetryflow/v1alpha1/*.go extension/flowmanagerextension/*.go
+
+  flow:generate:
+    desc: Generate the TelemetryFlow CRD from Go API types
+    dir: api/telemetryflow
+    cmds:
+      - go run sigs.k8s.io/controller-tools/cmd/controller-gen@v0.19.0 object crd paths=./v1alpha1 output:crd:artifacts:config=config/crd/bases
+
+  flow:test:
+    desc: Test the dynamic API and pipeline manager extension
+    cmds:
+      - task: flow:test:api
+      - task: flow:test:manager
+
+  flow:test:api:
+    dir: api/telemetryflow
+    cmds:
+      - go test ./...
+
+  flow:test:manager:
+    dir: extension/flowmanagerextension
+    cmds:
+      - go test ./...
+
+  flow:test:envtest:
+    desc: Run flow manager create, update, and delete tests against envtest
+    dir: extension/flowmanagerextension
+    cmds:
+      - KUBEBUILDER_ASSETS="$(go run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.25 use -p path 1.37.x!)" go test ./... -run '^TestFlowManagerWatchesSelectedFlows$' -count=1
+
+  flow:build:
+    desc: Build the Collector distribution with dynamic flow components
+    cmds:
+      - task: flow:generate
+      - make -C distributions/jetstream-collector build
+
+  flow:example:run:
+    desc: Run the flowmanager example using the local kind cluster kubeconfig
+    dir: cmd/jetstream-collector
+    env:
+      KUBECONFIG: '{{.TASKFILE_DIR}}/kubeconfig-jetstream-collector'
+    cmds:
+      - go run . --config=config-test-flowmanager.yaml
+
+  flow:example:apply:
+    desc: Apply the example TelemetryFlow resources to the local kind cluster
+    env:
+      KUBECONFIG: '{{.TASKFILE_DIR}}/kubeconfig-jetstream-collector'
+    cmds:
+      - kubectl apply --server-side=true -f api/telemetryflow/config/crd/bases/telemetry.grepplabs.io_telemetryflows.yaml
+      - kubectl wait --for=condition=Established crd/telemetryflows.telemetry.grepplabs.io --timeout=60s
+      - kubectl apply -k cmd/jetstream-collector/examples/flows/
+
+  flow:example:dump-config:
+    desc: Dump the active merged flow configuration from the local Collector
+    cmds:
+      - curl --fail --silent --show-error http://127.0.0.1:1777/debug/flowmanager/config
+
+  flow:example:send-log:
+    desc: Send one OTLP log through the shared receiver in the flow example
+    cmds:
+      - telemetrygen logs --otlp-endpoint 127.0.0.1:14317 --otlp-insecure --logs 1
+
+  flow:verify:
+    desc: Generate API artifacts and run all dynamic component tests
+    cmds:
+      - task: flow:generate
+      - task: flow:test
+
+  flow:integration:
+    desc: Generate API artifacts, run unit tests, and test reconciliation against envtest
+    cmds:
+      - task: flow:generate
+      - task: flow:test
+      - task: flow:test:envtest

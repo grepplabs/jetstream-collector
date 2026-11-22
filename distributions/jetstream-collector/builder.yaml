@@ -49,6 +49,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.165.0
 
 replaces:
+  - github.com/grepplabs/jetstream-collector/api/telemetryflow => ../../../api/telemetryflow
   - github.com/grepplabs/jetstream-collector/pkg/jetstream => ../../../pkg/jetstream
   - github.com/grepplabs/jetstream-collector/pkg/s3 => ../../../pkg/s3
   - github.com/grepplabs/jetstream-collector/pkg/s3jetstream => ../../../pkg/s3jetstream
@@ -66,6 +67,8 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.71.0
 
 extensions:
+  - gomod: github.com/grepplabs/jetstream-collector/extension/flowmanagerextension v0.0.0
+    path: ../../extension/flowmanagerextension
   - gomod: github.com/grepplabs/jetstream-collector/extension/s3jetstreameventextension v0.0.0
     path: ../../extension/s3jetstreameventextension
   - gomod: github.com/grepplabs/jetstream-collector/extension/s3eventresolverextension v0.0.0

@@ -1,0 +1,25 @@
+extensions:
+  flowmanager:
+    namespace: observability
+    kubeconfig: ${env:KUBECONFIG}
+    debug_endpoint: 127.0.0.1:1777
+    selector:
+      matchLabels:
+        telemetry.grepplabs.io/collector: production
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  extensions:
+    - flowmanager
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    logs:
+      disable_stacktrace: true

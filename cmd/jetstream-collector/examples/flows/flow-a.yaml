@@ -1,0 +1,29 @@
+apiVersion: telemetry.grepplabs.io/v1alpha1
+kind: TelemetryFlow
+metadata:
+  name: flow-a
+  namespace: observability
+  labels:
+    telemetry.grepplabs.io/collector: production
+spec:
+  config:
+    receivers: {}
+
+    processors:
+      attributes/flow-a:
+        actions:
+          - key: flow
+            value: flow-a
+            action: upsert
+      batch/flow-a: {}
+
+    exporters:
+      debug/flow-a:
+        verbosity: detailed
+
+    service:
+      pipelines:
+        logs/flow-a:
+          receivers: [otlp/shared]
+          processors: [attributes/flow-a, batch/flow-a]
+          exporters: [debug/flow-a]
