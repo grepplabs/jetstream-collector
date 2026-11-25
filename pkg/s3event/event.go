@@ -30,15 +30,16 @@ type CloudEvent struct {
 
 // ObjectReference identifies the stored bytes without embedding the telemetry payload.
 type ObjectReference struct {
-	Bucket          string    `json:"bucket"`
-	Key             string    `json:"key"`
-	Signal          string    `json:"signal"`
-	API             string    `json:"api"`
-	ContentType     string    `json:"content_type"`
-	ContentEncoding string    `json:"content_encoding,omitempty"`
-	Size            int64     `json:"size"`
-	SHA256          string    `json:"sha256,omitempty"`
-	UploadedAt      time.Time `json:"uploaded_at"`
+	Bucket          string         `json:"bucket"`
+	Key             string         `json:"key"`
+	Signal          string         `json:"signal"`
+	API             string         `json:"api"`
+	ContentType     string         `json:"content_type"`
+	ContentEncoding string         `json:"content_encoding,omitempty"`
+	Size            int64          `json:"size"`
+	SHA256          string         `json:"sha256,omitempty"`
+	UploadedAt      time.Time      `json:"uploaded_at"`
+	Attributes      map[string]any `json:"attributes,omitempty"`
 }
 
 // Notifier accepts a CloudEvent. Implementations should return only after their
